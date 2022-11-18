@@ -24,6 +24,7 @@ def init_db():
 
     read_db(db, 'subject.db')
 
+
 def read_db(db, db_name: str):
     for key in db.get_keys(db_name):
         print(f"s: {key}")
@@ -37,7 +38,7 @@ if __name__ == '__main__':
     storage_model = DataStorage()
     graph_parser = RDFParser(graph_url)
     graph_parser.fill_data(storage_model)
-    one_item = storage_model.get_item('object.db', "https://www.w3.org/People/Berners-Lee/")
-    print(one_item)
-    pass
-
+    answer = find_pattern_value(storage_model, graph_parser, object_pattern="https://www.w3.org/People/Berners-Lee/")
+    print(answer)
+    # one_item = storage_model.get_item('object.db', "https://www.w3.org/People/Berners-Lee/")
+    # print(one_item)

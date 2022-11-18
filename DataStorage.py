@@ -1,39 +1,51 @@
-import pickledb
+from typing import Union, List
+
+import pickledb as pickledb
+
+DATABASES_NAMES = ['subject.db',
+                   'predicate.db',
+                   'object.db',
+                   'subject-predicate.db',
+                   'subject-object.db',
+                   'predicate-object.db']
+DIRECTORY = 'databases/'
 
 
 class DataStorage:
 
     def __init__(self):
         self.databases = {}
-        self.databases_names = ['subject.db', 'predicate.db', 'object.db', 'subject-predicate.db', 'subject-object.db', 'predicate-object.db']
-        for db_name in self.databases_names:
-            self.load_db(db_name, False)
+        for db_name in DATABASES_NAMES:
+            self._load_db(db_name)
 
-    def load_db(self, db_name: str, dump: bool):
-        directory = 'databases/'
-        self.databases[db_name] = pickledb.load(f"{directory}{db_name}", dump)
+    def _load_db(self, db_name: str, dump=False) -> None:
+        self.databases[db_name] = pickledb.load(f"{DIRECTORY}{db_name}", dump)
 
-    def save_db(self, db_name: str):
+    def save_db(self, db_name: str) -> None:
         self.databases[db_name].dump()
 
-    def save_all(self):
-        for db_name in self.databases.keys():
+    def save_all_db(self) -> None:
+        for db_name in DATABASES_NAMES:
             self.save_db(db_name)
 
-    def set_item(self, db_name: str, key: str, value: str):
+    def _set_item(self, db_name: str, key: str, value: str) -> None:
         self.databases[db_name].set(key, value)
 
-    def get_keys(self, db_name):
-        return self.databases[db_name].getall()
-
-    def get_item(self, db_name: str, key: str):
+    def get_item(self, db_name: str, key: str) -> Union[str, List[str]]:
         return self.databases[db_name].get(key)
 
-    def append(self, db_name: str, key: str, more: str):
+    def _append_item(self, db_name: str, key: str, more: str) -> None:
         return self.databases[db_name].append(key, f"\n{more}")
 
-    def insert(self, db_name: str, key: str, value: str):
+    def insert_item(self, db_name: str, key: str, value: str) -> None:
         if not self.get_item(db_name, key):
-            self.set_item(db_name, key, value)
+            self._set_item(db_name, key, value)
         else:
-            self.append(db_name, key, value)
+            self._append_item(db_name, key, value)
+
+    def get_keys(self, db_name) -> List[str]:
+        return self.databases[db_name].getall()
+
+    def sort_alphabetically(self) -> None:
+        for db_name in DATABASES_NAMES:
+            self.databases[db_name] = sorted(self.databases[db_name])
