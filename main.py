@@ -1,7 +1,10 @@
+from typing import Optional
+
 from DataStorage import DataStorage
 from rdflib import Graph
 
 from RDFParser import RDFParser
+from sparql_utilities import find_pattern_value
 
 
 # This is a sample Python script.
