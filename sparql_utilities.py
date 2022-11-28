@@ -50,5 +50,5 @@ def find_pattern_value(storage_model: DataStorage,
         return storage_model.get_item("subject-predicate.db", item)
     if object_pattern and predicate_pattern and (not subject_pattern):
         item = rdf_parser.map_item(object_pattern, predicate_pattern)
-        return storage_model.get_item("object-predicate.db", item)
+        return storage_model.get_item("predicate-object.db", item)
     # return everything

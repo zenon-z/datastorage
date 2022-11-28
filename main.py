@@ -5,6 +5,8 @@ from rdflib import Graph
 
 from RDFParser import RDFParser
 from sparql_utilities import find_pattern_value
+from Evaluator import Evaluator
+import re
 
 
 # This is a sample Python script.
@@ -15,7 +17,7 @@ from sparql_utilities import find_pattern_value
 
 def init_db():
     g = Graph()
-    g.parse("http://www.w3.org/People/Berners-Lee/card")
+    g.parse('https://dbpedia.org/ontology/data/definitions.ttl')
     g.serialize(format='turtle')
     db = DataStorage()
     for db_name in db.databases_names:
@@ -35,13 +37,66 @@ def read_db(db, db_name: str):
         print("\n")
 
 
+def evaluate_all():
+    ev = Evaluator(storage_model, graph_parser)
+    ev.evaluate_triple(subject_pattern="dbo:فائل",
+                       predicate_pattern="wdrs:describedby",
+                       object_pattern="<http://dbpedia.org/ontology/data/definitions.ttl>")
+
+    ev.evaluate_triple(subject_pattern="dbo:فائل",
+                       predicate_pattern="",
+                       object_pattern="<http://dbpedia.org/ontology/data/definitions.ttl>")
+
+    ev.evaluate_triple(subject_pattern="dbo:فائل",
+                       predicate_pattern="wdrs:describedby",
+                       object_pattern="")
+
+    ev.evaluate_triple(subject_pattern="dbo:فائل",
+                       predicate_pattern="",
+                       object_pattern="")
+
+    ev.evaluate_triple(subject_pattern="",
+                       predicate_pattern="wdrs:describedby",
+                       object_pattern="<http://dbpedia.org/ontology/data/definitions.ttl>")
+
+    ev.evaluate_triple(subject_pattern="",
+                       predicate_pattern="",
+                       object_pattern="<http://dbpedia.org/ontology/data/definitions.ttl>")
+
+    ev.evaluate_triple(subject_pattern="",
+                       predicate_pattern="wdrs:describedby",
+                       object_pattern="")
+
+
+def convert_output():
+    answer = find_pattern_value(storage_model, graph_parser, predicate_pattern="wdrs:describedby")
+    index = 0
+    for solution in answer.split("\n"):
+        print(f"OMEGA{index}= {{")
+        for response in solution.split("-"):
+            rep = re.search("([spo]): ", response)
+            if rep is not None:
+                position = rep.group(0)
+                print(f"{get_variable_name(position)}={response.split(position)[1].strip()}")
+        print("}")
+        index = index + 1
+
+
+def get_variable_name(position):
+    return f"?{position[0]}"
+
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    graph_url = "http://www.w3.org/People/Berners-Lee/card"
+    graph_url = 'https://dbpedia.org/ontology/data/definitions.ttl'
     storage_model = DataStorage()
     graph_parser = RDFParser(graph_url)
     graph_parser.fill_data(storage_model)
-    answer = find_pattern_value(storage_model, graph_parser, object_pattern="https://www.w3.org/People/Berners-Lee/")
-    print(answer)
+
+    # answer = find_pattern_value(storage_model, graph_parser, object_pattern="https://www.w3.org/People/Berners-Lee/")
+    # print(answer)
+    # convert_output()
+    evaluate_all()
+
     # one_item = storage_model.get_item('object.db', "https://www.w3.org/People/Berners-Lee/")
     # print(one_item)
