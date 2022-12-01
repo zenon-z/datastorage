@@ -49,3 +49,8 @@ class DataStorage:
     def sort_alphabetically(self) -> None:
         for db_name in DATABASES_NAMES:
             self.databases[db_name] = sorted(self.databases[db_name])
+
+    def delete_all(self):
+        for db_name in DATABASES_NAMES:
+            self.databases[db_name].deldb()
+            self.databases[db_name].dump()

@@ -1,4 +1,4 @@
-from typing import Optional, List, Tuple, Union
+from typing import Optional
 import time
 from DataStorage import DataStorage
 from RDFParser import RDFParser
@@ -23,9 +23,39 @@ class Evaluator:
         :return:
         """
         start_time = time.time()
-        sparql_util.find_pattern_value(self.storage_model, self.rdf_parser, subject_pattern, predicate_pattern,
-                                       object_pattern)
+        result = sparql_util.find_pattern_value(self.storage_model, self.rdf_parser, subject_pattern, predicate_pattern,
+                                                object_pattern)
         end_time = time.time()
+        print(result, (end_time - start_time) * 1000)
 
-        print(
-            f"Time elapsed for triple s={subject_pattern} p={predicate_pattern} o={object_pattern}: \n{(end_time - start_time) * 1000} ms \n")
+    def evaluate_all(self, predicate_pattern="wdrs:describedby"):
+        self.evaluate_triple(subject_pattern=predicate_pattern,
+                             predicate_pattern=predicate_pattern,
+                             object_pattern=predicate_pattern)
+
+        self.evaluate_triple(subject_pattern=predicate_pattern,
+                             predicate_pattern="",
+                             object_pattern=predicate_pattern)
+
+        self.evaluate_triple(subject_pattern=predicate_pattern,
+                             predicate_pattern=predicate_pattern,
+                             object_pattern="")
+
+        self.evaluate_triple(subject_pattern="",
+                             predicate_pattern=predicate_pattern,
+                             object_pattern=predicate_pattern)
+
+        self.evaluate_triple(subject_pattern=predicate_pattern,
+                             predicate_pattern="",
+                             object_pattern="")
+
+        self.evaluate_triple(subject_pattern="",
+                             predicate_pattern="",
+                             object_pattern=predicate_pattern)
+
+        self.evaluate_triple(subject_pattern="",
+                             predicate_pattern=predicate_pattern,
+                             object_pattern="")
+        self.evaluate_triple(subject_pattern=predicate_pattern,
+                             predicate_pattern="",
+                             object_pattern="")
