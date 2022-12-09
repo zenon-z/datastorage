@@ -23,8 +23,7 @@ def one_url():
     evaluator = Evaluator(storage_model, graph_parser)
     evaluator.evaluate_all()
     storage_model.delete_all()
-
-
+"""
 def convert_output():
     answer = find_pattern_value(storage_model, graph_parser, predicate_pattern="wdrs:describedby")
     index = 0
@@ -41,7 +40,7 @@ def convert_output():
 
 def get_variable_name(position):
     return f"?{position[0]}"
-
+"""
 
 if __name__ == '__main__':
     graph_url = 'https://dbpedia.org/ontology/data/definitions.ttl'
@@ -50,6 +49,10 @@ if __name__ == '__main__':
     graph_parser = RDFParser(graph_url)
     graph_parser.fill_data(storage_model)
     end_time = time.time()
+    a = end_time - start_time
+    print("loading time is ", a)
     evaluator = Evaluator(storage_model, graph_parser)
     evaluator.evaluate_all()
+    result = find_pattern_value(storage_model=storage_model, rdf_parser=graph_parser, predicate_pattern="ov:describes")
+    print(result)
     storage_model.delete_all()
