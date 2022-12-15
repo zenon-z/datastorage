@@ -1,15 +1,9 @@
-import re
 import time
-from typing import Optional
-
 from DataStorage import DataStorage
-from rdflib import Graph
-
-from GraphStorage import GraphStorage
 from RDFParser import RDFParser
 from sparql_utilities import find_pattern_value
 from Evaluator import Evaluator
-
+from Database import Database
 
 def one_url():
     start_time = time.time()
@@ -23,6 +17,8 @@ def one_url():
     evaluator = Evaluator(storage_model, graph_parser)
     evaluator.evaluate_all()
     storage_model.delete_all()
+
+
 """
 def convert_output():
     answer = find_pattern_value(storage_model, graph_parser, predicate_pattern="wdrs:describedby")
@@ -42,17 +38,42 @@ def get_variable_name(position):
     return f"?{position[0]}"
 """
 
+
+def parse_command(command):
+    commands = ["ADD_TRIPLE", "QUERY_TRIPLE", "DELETE_TRIPLE", "BULK_ADD", "BULK_UPDATE", "BULK_DELETE"]
+    parameters = command.split(" ")
+    if len(parameters) != 4 or not parameters[0] in commands:
+        print("UNKNOWN COMMAND")
+
+    if parameters[0] == "ADD_TRIPLE":
+        a = "a"
+    if parameters[0] == "QUERY_TRIPLE":
+        answer = find_pattern_value(storage_model,
+                                    graph_parser,
+                                    subject_pattern=parse_pattern_variable(parameters[1]),
+                                    predicate_pattern=parse_pattern_variable(parameters[2]),
+                                    object_pattern=parse_pattern_variable(parameters[3]))
+
+
+def parse_pattern_variable(pattern_var):
+    return "" if pattern_var[0] == "?" else pattern_var
+
+
 if __name__ == '__main__':
     graph_url = 'https://dbpedia.org/ontology/data/definitions.ttl'
-    start_time = time.time()
     storage_model = DataStorage()
+    redis_db = Database("localhost", 6379, 0)
+    start_time = time.time()
     graph_parser = RDFParser(graph_url)
-    graph_parser.fill_data(storage_model)
+    graph_parser.fill_data(redis_db)
     end_time = time.time()
     a = end_time - start_time
     print("loading time is ", a)
-    evaluator = Evaluator(storage_model, graph_parser)
+    evaluator = Evaluator(redis_db, graph_parser)
     evaluator.evaluate_all()
     result = find_pattern_value(storage_model=storage_model, rdf_parser=graph_parser, predicate_pattern="ov:describes")
-    print(result)
+    # print(result)
     storage_model.delete_all()
+
+    while True:
+        parse_command(input("Give a triple"))

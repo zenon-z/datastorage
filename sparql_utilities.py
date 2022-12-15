@@ -5,6 +5,24 @@ from DataStorage import DataStorage
 from RDFParser import RDFParser
 
 
+def find_pattern_value2(storage_model: DataStorage,
+                        rdf_parser: RDFParser,
+                        subject_pattern: Optional[str] = "",
+                        predicate_pattern: Optional[str] = "",
+                        object_pattern: Optional[str] = "") -> Union[str, List[str]]:
+    if subject_pattern and (not object_pattern) and (not predicate_pattern):
+        item = rdf_parser.encode_item(subject_pattern)
+        return storage_model.get_item(item)
+
+    if object_pattern and (not subject_pattern) and (not predicate_pattern):
+        item = rdf_parser.encode_item(object_pattern)
+        return storage_model.get_item(item)
+
+    if predicate_pattern and (not subject_pattern) and (not object_pattern):
+        item = rdf_parser.encode_item(predicate_pattern)
+        return storage_model.get_item(item)
+
+
 def find_pattern_value(storage_model: DataStorage,
                        rdf_parser: RDFParser,
                        subject_pattern: Optional[str] = "",
