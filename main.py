@@ -1,9 +1,10 @@
 import time
 from DataStorage import DataStorage
 from RDFParser import RDFParser
-from sparql_utilities import find_pattern_value
+from sparql_utilities import find_pattern_value2
 from Evaluator import Evaluator
 from Database import Database
+
 
 def one_url():
     start_time = time.time()
@@ -48,11 +49,12 @@ def parse_command(command):
     if parameters[0] == "ADD_TRIPLE":
         a = "a"
     if parameters[0] == "QUERY_TRIPLE":
-        answer = find_pattern_value(storage_model,
-                                    graph_parser,
-                                    subject_pattern=parse_pattern_variable(parameters[1]),
-                                    predicate_pattern=parse_pattern_variable(parameters[2]),
-                                    object_pattern=parse_pattern_variable(parameters[3]))
+        answer = find_pattern_value2(redis_db,
+                                     graph_parser,
+                                     subject_pattern=parse_pattern_variable(parameters[1]),
+                                     predicate_pattern=parse_pattern_variable(parameters[2]),
+                                     object_pattern=parse_pattern_variable(parameters[3]))
+        print(answer)
 
 
 def parse_pattern_variable(pattern_var):
@@ -71,9 +73,9 @@ if __name__ == '__main__':
     print("loading time is ", a)
     evaluator = Evaluator(redis_db, graph_parser)
     evaluator.evaluate_all()
-    result = find_pattern_value(storage_model=storage_model, rdf_parser=graph_parser, predicate_pattern="ov:describes")
+    # result = find_pattern_value2(storage_model=storage_model, rdf_parser=graph_parser, predicate_pattern="ov:describes")
     # print(result)
     storage_model.delete_all()
 
     while True:
-        parse_command(input("Give a triple"))
+        parse_command(input("Give a triple\n"))

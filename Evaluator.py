@@ -3,11 +3,12 @@ import time
 from DataStorage import DataStorage
 from RDFParser import RDFParser
 import sparql_utilities as sparql_util
+from Database import Database
 
 
 class Evaluator:
 
-    def __init__(self, storage_model: DataStorage, rdf_parser: RDFParser):
+    def __init__(self, storage_model: Database, rdf_parser: RDFParser):
         self.storage_model = storage_model
         self.rdf_parser = rdf_parser
 
@@ -23,7 +24,8 @@ class Evaluator:
         :return:
         """
         start_time = time.time() * 1000
-        result = sparql_util.find_pattern_value2(self.storage_model, self.rdf_parser, subject_pattern,
+        result = sparql_util.find_pattern_value2(self.storage_model, self.rdf_parser,
+                                                 subject_pattern,
                                                  predicate_pattern,
                                                  object_pattern)
         end_time = time.time() * 1000
@@ -36,8 +38,10 @@ class Evaluator:
             s_prefix = s.n3(self.rdf_parser.graph.namespace_manager)
             p_prefix = p.n3(self.rdf_parser.graph.namespace_manager)
             o_prefix = o.n3(self.rdf_parser.graph.namespace_manager)
-            result, time = self.evaluate_triple(subject_pattern=s_prefix, predicate_pattern=p_prefix,
-                                                object_pattern=o_prefix)
+            result, time = self.evaluate_triple(subject_pattern=s, predicate_pattern=p,
+                                                object_pattern=o)
+            if not result:
+                print(result)
             result_2, time2 = self.evaluate_triple(object_pattern=o_prefix, predicate_pattern=s_prefix,
                                                    subject_pattern=p_prefix)
             total_time_ms += time
@@ -138,6 +142,7 @@ class Evaluator:
             result2, time2 = self.evaluate_triple(object_pattern=s_prefix)
             total_time_ms += time
             false_time += time2
+
             # print(f"for the predicate predicate {p_prefix}")
             # print(f"there is {len(result)} matching patterns")
             # print(f"and the time needed to get the answer is {time} ms")
@@ -152,16 +157,16 @@ class Evaluator:
         print(f"The time needed to search on a pattern that only the predicate is known is {res2} ms")
         res3 = self.evaluate_predicate_subject()
         print(
-            f"The time needed to search on a pattern that only the object is known is {res3} ms")
+             f"The time needed to search on a pattern that only the object is known is {res3} ms")
         res4 = self.evaluate_predicate()
         print(
-            f"The time needed to search on a pattern that its subject and object are known is {res4} ms")
+            f"The time needed to search on a pattern that its predicate are known is {res4} ms")
         res5 = self.evaluate_subject()
         print(
-            f"The time needed to search on a pattern that its predicate and object are known is {res5} ms")
+            f"The time needed to search on a pattern that its subject are known is {res5} ms")
         res6 = self.evaluate_object()
         print(
-            f"The time needed to search on a pattern that its subject and predicate are known is {res6} ms")
+            f"The time needed to search on a pattern that its object are known is {res6} ms")
 
         print(
             f"The average time to search on a triple is {(res0 + res1 + res2 + res3 + res4 + res5 + res6) / 7} ms, the graph has {len(self.rdf_parser.graph)} triples")
