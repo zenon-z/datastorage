@@ -1,204 +1,129 @@
-from typing import Optional
 import time
-from DataStorage import DataStorage
-from RDFParser import RDFParser
-import sparql_utilities as sparql_util
+
 from Database import Database
+from RDFParser import RDFParser, BATCH_SIZE
+from Utilities import Utilities
 
 
 class Evaluator:
 
-    def __init__(self, storage_model: Database, rdf_parser: RDFParser):
-        self.storage_model = storage_model
+    def __init__(self, data_base: Database, rdf_parser: RDFParser):
+        self.utilities = Utilities(data_base, rdf_parser)
         self.rdf_parser = rdf_parser
+        self.data_base = data_base
 
-    def evaluate_triple(self,
-                        subject_pattern: Optional[str] = "",
-                        predicate_pattern: Optional[str] = "",
-                        object_pattern: Optional[str] = ""):
-        """
-        Time to evaluate one pattern
-        :param subject_pattern:
-        :param predicate_pattern:
-        :param object_pattern:
-        :return:
-        """
+    def evaluate_pattern_type(self, all_keys: list):
         start_time = time.time() * 1000
-        result = sparql_util.find_pattern_value2(self.storage_model, self.rdf_parser,
-                                                 subject_pattern,
-                                                 predicate_pattern,
-                                                 object_pattern)
+        num_added = 0
+        for key in all_keys:
+            if num_added == 0:
+                self.data_base.start_pipeline()
+            self.data_base.get_item(key)
+            num_added += 1
+            if num_added == BATCH_SIZE:
+                self.data_base.execute_commands()
+                self.data_base.start_pipeline()
+                num_added = 0
+        self.data_base.execute_commands()
         end_time = time.time() * 1000
-        return result, (end_time - start_time)
+        return (end_time - start_time) / (2 * len(self.rdf_parser.graph))
 
-    def evaluate_subject_predicate_object(self):
-        total_time_ms = 0
-        false_time = 0
-        for s, p, o in self.rdf_parser.graph:
-            s_prefix = s.n3(self.rdf_parser.graph.namespace_manager)
-            p_prefix = p.n3(self.rdf_parser.graph.namespace_manager)
-            o_prefix = o.n3(self.rdf_parser.graph.namespace_manager)
-            result, time = self.evaluate_triple(subject_pattern=s, predicate_pattern=p,
-                                                object_pattern=o)
-            if not result:
-                print(result)
-            result_2, time2 = self.evaluate_triple(object_pattern=o_prefix, predicate_pattern=s_prefix,
-                                                   subject_pattern=p_prefix)
-            total_time_ms += time
-            false_time += time2
-            # print(f"for the predicate {p_prefix} and object {o_prefix}")
-            # print(f"there is {len(result)} matching patterns")
-            # print(f"and the time needed to get the answer is {time} ms")
-        return (total_time_ms + false_time) / (2 * len(self.rdf_parser.graph))
-
-    def evaluate_predicate_object(self):
-        total_time_ms = 0
-        false_time = 0
-        for s, p, o in self.rdf_parser.graph:
-            s_prefix = s.n3(self.rdf_parser.graph.namespace_manager)
-            p_prefix = p.n3(self.rdf_parser.graph.namespace_manager)
-            o_prefix = o.n3(self.rdf_parser.graph.namespace_manager)
-            result, time = self.evaluate_triple(predicate_pattern=p_prefix, object_pattern=o_prefix)
-            result_2, time2 = self.evaluate_triple(object_pattern=o_prefix, predicate_pattern=s_prefix)
-            total_time_ms += time
-            false_time += time2
-            # print(f"for the predicate {p_prefix} and object {o_prefix}")
-            # print(f"there is {len(result)} matching patterns")
-            # print(f"and the time needed to get the answer is {time} ms")
-        return (total_time_ms + false_time) / (2 * len(self.rdf_parser.graph))
-
-    def evaluate_predicate_subject(self):
-        total_time_ms = 0
-        false_time = 0
-        for s, p, o in self.rdf_parser.graph:
-            s_prefix = s.n3(self.rdf_parser.graph.namespace_manager)
-            p_prefix = p.n3(self.rdf_parser.graph.namespace_manager)
-            o_prefix = o.n3(self.rdf_parser.graph.namespace_manager)
-            result, time = self.evaluate_triple(predicate_pattern=p_prefix, subject_pattern=s_prefix)
-            result_2, time2 = self.evaluate_triple(subject_pattern=o_prefix, predicate_pattern=s_prefix)
-            total_time_ms += time
-            false_time += time2
-            # print(f"for the predicate {p_prefix} and object {o_prefix}")
-            # print(f"there is {len(result)} matching patterns")
-            # print(f"and the time needed to get the answer is {time} ms")
-        return (total_time_ms + false_time) / (2 * len(self.rdf_parser.graph))
-
-    def evaluate_object_subject(self):
-        total_time_ms = 0
-        false_time = 0
-        for s, p, o in self.rdf_parser.graph:
-            s_prefix = s.n3(self.rdf_parser.graph.namespace_manager)
-            p_prefix = p.n3(self.rdf_parser.graph.namespace_manager)
-            o_prefix = o.n3(self.rdf_parser.graph.namespace_manager)
-            result, time = self.evaluate_triple(object_pattern=o_prefix, subject_pattern=s_prefix)
-            result_2, time2 = self.evaluate_triple(subject_pattern=o_prefix, object_pattern=s_prefix)
-            total_time_ms += time
-            false_time += time2
-            # print(f"for the predicate {p_prefix} and object {o_prefix}")
-            # print(f"there is {len(result)} matching patterns")
-            # print(f"and the time needed to get the answer is {time} ms")
-        return (total_time_ms + false_time) / (2 * len(self.rdf_parser.graph))
-
-    def evaluate_predicate(self):
-        total_time_ms = 0
-        false_time = 0
-        for s, p, o in self.rdf_parser.graph:
-            s_prefix = s.n3(self.rdf_parser.graph.namespace_manager)
-            p_prefix = p.n3(self.rdf_parser.graph.namespace_manager)
-            o_prefix = o.n3(self.rdf_parser.graph.namespace_manager)
-            result, time = self.evaluate_triple(predicate_pattern=p_prefix)
-            result2, time2 = self.evaluate_triple(predicate_pattern=s_prefix)
-            total_time_ms += time
-            false_time += time2
-            # print(f"for the predicate predicate {p_prefix}")
-            # print(f"there is {len(result)} matching patterns")
-            # print(f"and the time needed to get the answer is {time} ms")
-        return (total_time_ms + false_time) / (2 * len(self.rdf_parser.graph))
 
     def evaluate_subject(self):
-        total_time_ms = 0
-        false_time = 0
+        all_keys = []
         for s, p, o in self.rdf_parser.graph:
-            s_prefix = s.n3(self.rdf_parser.graph.namespace_manager)
-            p_prefix = p.n3(self.rdf_parser.graph.namespace_manager)
-            o_prefix = o.n3(self.rdf_parser.graph.namespace_manager)
-            result, time = self.evaluate_triple(subject_pattern=s_prefix)
-            result2, time2 = self.evaluate_triple(subject_pattern=o_prefix)
-            total_time_ms += time
-            false_time += time2
-            # print(f"for the predicate predicate {p_prefix}")
-            # print(f"there is {len(result)} matching patterns")
-            # print(f"and the time needed to get the answer is {time} ms")
-        return (total_time_ms + false_time) / (2 * len(self.rdf_parser.graph))
+            s = self.rdf_parser.encode_item(s.n3(self.rdf_parser.graph.namespace_manager))
+            p = self.rdf_parser.encode_item(p.n3(self.rdf_parser.graph.namespace_manager))
+            o = self.rdf_parser.encode_item(o.n3(self.rdf_parser.graph.namespace_manager))
+            key = self.rdf_parser.build_key("subject", str(s))
+            all_keys.append(key)
+            key = self.rdf_parser.build_key("subject", str(o))
+            all_keys.append(key)
+        return self.evaluate_pattern_type(all_keys)
+
+    def evaluate_predicate(self):
+        all_keys = []
+        for s, p, o in self.rdf_parser.graph:
+            s = self.rdf_parser.encode_item(s.n3(self.rdf_parser.graph.namespace_manager))
+            p = self.rdf_parser.encode_item(p.n3(self.rdf_parser.graph.namespace_manager))
+            o = self.rdf_parser.encode_item(o.n3(self.rdf_parser.graph.namespace_manager))
+            key = self.rdf_parser.build_key("predicate", str(p))
+            all_keys.append(key)
+            key = self.rdf_parser.build_key("predicate", str(o))
+            all_keys.append(key)
+        return self.evaluate_pattern_type(all_keys)
 
     def evaluate_object(self):
-        total_time_ms = 0
-        false_time = 0
+        all_keys = []
         for s, p, o in self.rdf_parser.graph:
-            s_prefix = s.n3(self.rdf_parser.graph.namespace_manager)
-            p_prefix = p.n3(self.rdf_parser.graph.namespace_manager)
-            o_prefix = o.n3(self.rdf_parser.graph.namespace_manager)
-            result, time = self.evaluate_triple(object_pattern=o_prefix)
-            result2, time2 = self.evaluate_triple(object_pattern=s_prefix)
-            total_time_ms += time
-            false_time += time2
+            s = self.rdf_parser.encode_item(s.n3(self.rdf_parser.graph.namespace_manager))
+            p = self.rdf_parser.encode_item(p.n3(self.rdf_parser.graph.namespace_manager))
+            o = self.rdf_parser.encode_item(o.n3(self.rdf_parser.graph.namespace_manager))
+            key = self.rdf_parser.build_key("object", str(o))
+            all_keys.append(key)
+            key = self.rdf_parser.build_key("object", str(s))
+            all_keys.append(key)
+        return self.evaluate_pattern_type(all_keys)
 
-            # print(f"for the predicate predicate {p_prefix}")
-            # print(f"there is {len(result)} matching patterns")
-            # print(f"and the time needed to get the answer is {time} ms")
-        return (total_time_ms + false_time) / (2 * len(self.rdf_parser.graph))
+    def evaluate_subject_object(self):
+        all_keys = []
+        for s, p, o in self.rdf_parser.graph:
+            s = self.rdf_parser.encode_item(s.n3(self.rdf_parser.graph.namespace_manager))
+            p = self.rdf_parser.encode_item(p.n3(self.rdf_parser.graph.namespace_manager))
+            o = self.rdf_parser.encode_item(o.n3(self.rdf_parser.graph.namespace_manager))
+            key = self.rdf_parser.build_key("subject-object", self.rdf_parser.concatenate_items(s, o))
+            all_keys.append(key)
+            key = self.rdf_parser.build_key("subject-object", str(p))
+            all_keys.append(key)
+        return self.evaluate_pattern_type(all_keys)
+
+    def evaluate_subject_predicate(self):
+        all_keys = []
+        for s, p, o in self.rdf_parser.graph:
+            s = self.rdf_parser.encode_item(s.n3(self.rdf_parser.graph.namespace_manager))
+            p = self.rdf_parser.encode_item(p.n3(self.rdf_parser.graph.namespace_manager))
+            o = self.rdf_parser.encode_item(o.n3(self.rdf_parser.graph.namespace_manager))
+            key = self.rdf_parser.build_key("subject-predicate", self.rdf_parser.concatenate_items(s, p))
+            all_keys.append(key)
+            key = self.rdf_parser.build_key("subject-predicate", str(o))
+            all_keys.append(key)
+        return self.evaluate_pattern_type(all_keys)
+
+    def evaluate_predicate_object(self):
+        all_keys = []
+        for s, p, o in self.rdf_parser.graph:
+            s = self.rdf_parser.encode_item(s.n3(self.rdf_parser.graph.namespace_manager))
+            p = self.rdf_parser.encode_item(p.n3(self.rdf_parser.graph.namespace_manager))
+            o = self.rdf_parser.encode_item(o.n3(self.rdf_parser.graph.namespace_manager))
+            key = self.rdf_parser.build_key("predicate-object", self.rdf_parser.concatenate_items(p, o))
+            all_keys.append(key)
+            key = self.rdf_parser.build_key("predicate-object", str(s))
+            all_keys.append(key)
+        return self.evaluate_pattern_type(all_keys)
+
+    def evaluate_subject_predicate_object(self):
+        # can not be done with "bulk get", so the time will be too high
+        pass
 
     def evaluate_all(self):
         res0 = self.evaluate_subject_predicate_object()
         print(f"The time needed to search on a pattern that has everything is {res0} ms")
         res1 = self.evaluate_predicate_object()
-        print(f"The time needed to search on a pattern that only the subject is known is {res1} ms")
-        res2 = self.evaluate_object_subject()
-        print(f"The time needed to search on a pattern that only the predicate is known is {res2} ms")
-        res3 = self.evaluate_predicate_subject()
+        print(f"The time needed to search on a pattern that only the subject is not known is {res1} ms")
+        res2 = self.evaluate_subject_object()
+        print(f"The time needed to search on a pattern that only the predicate is not known is {res2} ms")
+        res3 = self.evaluate_subject_predicate()
         print(
-             f"The time needed to search on a pattern that only the object is known is {res3} ms")
+            f"The time needed to search on a pattern that only the object not is known is {res3} ms")
         res4 = self.evaluate_predicate()
         print(
-            f"The time needed to search on a pattern that its predicate are known is {res4} ms")
+            f"The time needed to search on a pattern that its predicate is known is {res4} ms")
         res5 = self.evaluate_subject()
         print(
-            f"The time needed to search on a pattern that its subject are known is {res5} ms")
+            f"The time needed to search on a pattern that its subject is known is {res5} ms")
         res6 = self.evaluate_object()
         print(
-            f"The time needed to search on a pattern that its object are known is {res6} ms")
+            f"The time needed to search on a pattern that its object is known is {res6} ms")
 
         print(
-            f"The average time to search on a triple is {(res0 + res1 + res2 + res3 + res4 + res5 + res6) / 7} ms, the graph has {len(self.rdf_parser.graph)} triples")
-
-    def evaluate_all2(self, predicate_pattern="wdrs:describedby"):
-        self.evaluate_triple(subject_pattern=predicate_pattern,
-                             predicate_pattern=predicate_pattern,
-                             object_pattern=predicate_pattern)
-
-        self.evaluate_triple(subject_pattern=predicate_pattern,
-                             predicate_pattern="",
-                             object_pattern=predicate_pattern)
-
-        self.evaluate_triple(subject_pattern=predicate_pattern,
-                             predicate_pattern=predicate_pattern,
-                             object_pattern="")
-
-        self.evaluate_triple(subject_pattern="",
-                             predicate_pattern=predicate_pattern,
-                             object_pattern=predicate_pattern)
-
-        self.evaluate_triple(subject_pattern=predicate_pattern,
-                             predicate_pattern="",
-                             object_pattern="")
-
-        self.evaluate_triple(subject_pattern="",
-                             predicate_pattern="",
-                             object_pattern=predicate_pattern)
-
-        self.evaluate_triple(subject_pattern="",
-                             predicate_pattern=predicate_pattern,
-                             object_pattern="")
-        self.evaluate_triple(subject_pattern=predicate_pattern,
-                             predicate_pattern="",
-                             object_pattern="")
+            f"The average time to search on a triple is {(res1 + res2 + res3 + res4 + res5 + res6) / 6} ms, the graph has {len(self.rdf_parser.graph)} triples")

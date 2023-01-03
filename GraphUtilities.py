@@ -1,13 +1,13 @@
 from typing import Optional, List, Union
 
-from DataStorage import DataStorage
+from Database import Database
 from RDFParser import RDFParser
 
 
-class GraphUtilities:
+class Utilities:
 
-    def __init__(self, storage_model: DataStorage, rdf_parser: RDFParser):
-        self.storage_model = storage_model
+    def __init__(self, database: Database, rdf_parser: RDFParser):
+        self.database = database
         self.rdf_parser = rdf_parser
 
     def get_triple(self,
@@ -16,50 +16,48 @@ class GraphUtilities:
                    object_pattern: Optional[str] = ""
                    ) -> Union[str, List[str]]:
         if subject_pattern and (not object_pattern) and (not predicate_pattern):
-            #item = self.rdf_parser.encode_item(subject_pattern)
-            #return self.storage_model.get_item("subject.db", item)
+            subject_pattern = self.rdf_parser.encode_item(subject_pattern)
             item = self.rdf_parser.build_key("subject", str(subject_pattern))
-            return self.storage_model.get_item(item)
+            return self.rdf_parser.decode_items(self.database.get_item(item))
 
         if object_pattern and (not subject_pattern) and (not predicate_pattern):
-            item = self.rdf_parser.encode_item(object_pattern)
-            return self.storage_model.get_item("object.db", item)
+            object_pattern = self.rdf_parser.encode_item(object_pattern)
+            item = self.rdf_parser.build_key("object", str(object_pattern))
+            return self.rdf_parser.decode_items(self.database.get_item(item))
 
         if predicate_pattern and (not subject_pattern) and (not object_pattern):
-            item = self.rdf_parser.encode_item(predicate_pattern)
-            return self.storage_model.get_item("predicate.db", item)
+            predicate_pattern = self.rdf_parser.encode_item(predicate_pattern)
+            item = self.rdf_parser.build_key("predicate", str(predicate_pattern))
+            return self.rdf_parser.decode_items(self.database.get_item(item))
 
         if subject_pattern and object_pattern and (not predicate_pattern):
-            item1 = self.rdf_parser.encode_item(subject_pattern)
-            item2 = self.rdf_parser.encode_item(object_pattern)
-            item = self.rdf_parser.concatenate_items(item1, item2)
-            return self.storage_model.get_item("subject-object.db", item)
+            subject_pattern = self.rdf_parser.encode_item(subject_pattern)
+            object_pattern = self.rdf_parser.encode_item(object_pattern)
+            item = self.rdf_parser.build_key("subject-object",
+                                             self.rdf_parser.concatenate_items(subject_pattern, object_pattern))
+            return self.rdf_parser.decode_items(self.database.get_item(item))
 
         if subject_pattern and predicate_pattern and (not object_pattern):
-            item1 = self.rdf_parser.encode_item(subject_pattern)
-            item2 = self.rdf_parser.encode_item(predicate_pattern)
-            item = self.rdf_parser.concatenate_items(item1, item2)
-            return self.storage_model.get_item("subject-predicate.db", item)
+            subject_pattern = self.rdf_parser.encode_item(subject_pattern)
+            predicate_pattern = self.rdf_parser.encode_item(predicate_pattern)
+            item = self.rdf_parser.build_key("subject-predicate",
+                                             self.rdf_parser.concatenate_items(subject_pattern, predicate_pattern))
+            return self.rdf_parser.decode_items(self.database.get_item(item))
 
         if object_pattern and predicate_pattern and (not subject_pattern):
-            item1 = self.rdf_parser.encode_item(object_pattern)
-            item2 = self.rdf_parser.encode_item(predicate_pattern)
-            item = self.rdf_parser.concatenate_items(item1, item2)
-            return self.storage_model.get_item("object-predicate.db", item)
+            object_pattern = self.rdf_parser.encode_item(object_pattern)
+            predicate_pattern = self.rdf_parser.encode_item(predicate_pattern)
+            item = self.rdf_parser.build_key("predicate-object",
+                                             self.rdf_parser.concatenate_items(predicate_pattern, object_pattern))
+            return self.rdf_parser.decode_items(self.database.get_item(item))
 
-        if subject_pattern and object_pattern and predicate_pattern:
-            item1 = self.rdf_parser.encode_item(object_pattern)
-            item2 = self.rdf_parser.encode_item(predicate_pattern)
-            item = self.rdf_parser.concatenate_items(item1, item2)
-            result = self.storage_model.get_item("object-predicate.db", item)
-            if isinstance(result, str):
-                results = result.split("\n")
-                if subject_pattern in results:
-                    return f"{subject_pattern} {predicate_pattern} {object_pattern}"
-            return False
-
-        else:
-            self.rdf_parser.get_all_triples()
+        if subject_pattern and predicate_pattern and object_pattern:
+            object_pattern = self.rdf_parser.encode_item(object_pattern)
+            predicate_pattern = self.rdf_parser.encode_item(predicate_pattern)
+            item = self.rdf_parser.build_key("predicate-object",
+                                             self.rdf_parser.concatenate_items(predicate_pattern, object_pattern))
+            if subject_pattern in self.rdf_parser.decode_items(self.database.get_item(item)):
+                return f"{subject_pattern} - {predicate_pattern} - {object_pattern}"
 
     def delete_triple(self,
                       subject_pattern: str,
@@ -68,19 +66,23 @@ class GraphUtilities:
                       ) -> None:
         if not self.get_triple(subject_pattern, predicate_pattern, object_pattern):
             return
-        encoded_subject = self.rdf_parser.encode_item(subject_pattern)
-        self.storage_model.delete_item("subject.db", encoded_subject)
-        encoded_object = self.rdf_parser.encode_item(object_pattern)
-        self.storage_model.delete_item("object.db", encoded_object)
-        encoded_predicate = self.rdf_parser.encode_item(predicate_pattern)
-        self.storage_model.delete_item("predicate.db", encoded_predicate)
-        encoded_subject_object = self.rdf_parser.concatenate_items(encoded_subject, encoded_object)
-        self.storage_model.delete_item("subject-object.db", encoded_subject_object)
-        encoded_subject_predicate = self.rdf_parser.concatenate_items(encoded_subject, encoded_predicate)
-        self.storage_model.delete_item("subject-predicate.db", encoded_subject_predicate)
-        encoded_object_predicate = self.rdf_parser.concatenate_items(encoded_object, encoded_predicate)
-        self.storage_model.delete_item("object-predicate.db", encoded_object_predicate)
-        self.storage_model.save_all_db()
+        subject_pattern = self.rdf_parser.encode_item(subject_pattern)
+        object_pattern = self.rdf_parser.encode_item(object_pattern)
+        predicate_pattern = self.rdf_parser.encode_item(predicate_pattern)
+        self.database.delete_item(self.rdf_parser.build_key("subject", subject_pattern),
+                    self.rdf_parser.concatenate_items(predicate_pattern, object_pattern))
+        self.database.delete_item(self.rdf_parser.build_key("predicate", predicate_pattern),
+                    self.rdf_parser.concatenate_items(subject_pattern, object_pattern))
+        self.database.delete_item(self.rdf_parser.build_key("object", object_pattern),
+                    self.rdf_parser.concatenate_items(subject_pattern, predicate_pattern))
+
+        self.database.delete_item(self.rdf_parser.build_key("subject-predicate", self.rdf_parser.concatenate_items(subject_pattern, predicate_pattern)),
+                    object_pattern)
+        self.database.delete_item(self.rdf_parser.build_key("subject-object", self.rdf_parser.concatenate_items(subject_pattern, object_pattern)),
+                    predicate_pattern)
+        self.database.delete_item(self.rdf_parser.build_key("predicate-object", self.rdf_parser.concatenate_items(predicate_pattern, object_pattern)),
+                    subject_pattern)
+
 
     def add_triple(self,
                    subject_pattern: str,
@@ -89,19 +91,27 @@ class GraphUtilities:
                    ) -> None:
         if self.get_triple(subject_pattern, predicate_pattern, object_pattern):
             return
-        encoded_subject = self.rdf_parser.encode_item(subject_pattern)
-        predicate_object = self.rdf_parser.concatenate_items(predicate_pattern, object_pattern)
-        self.storage_model.insert_item("subject.db", encoded_subject, predicate_object)
-        encoded_object = self.rdf_parser.encode_item(object_pattern)
-        subject_predicate = self.rdf_parser.concatenate_items(subject_pattern, predicate_pattern)
-        self.storage_model.insert_item("object.db", encoded_object, subject_predicate)
-        encoded_predicate = self.rdf_parser.encode_item(predicate_pattern)
-        object_subject = self.rdf_parser.concatenate_items(object_pattern, subject_pattern)
-        self.storage_model.insert_item("predicate.db", encoded_predicate, object_subject)
-        encoded_subject_object = self.rdf_parser.concatenate_items(encoded_subject, encoded_object)
-        self.storage_model.insert_item("subject-object.db", encoded_subject_object, predicate_pattern)
-        encoded_subject_predicate = self.rdf_parser.concatenate_items(encoded_subject, encoded_predicate)
-        self.storage_model.insert_item("subject-predicate.db", encoded_subject_predicate, object_pattern)
-        encoded_object_predicate = self.rdf_parser.concatenate_items(encoded_object, encoded_predicate)
-        self.storage_model.insert_item("object-predicate.db", encoded_object_predicate, subject_pattern)
-        self.storage_model.save_all_db()
+        subject_pattern = self.rdf_parser.encode_item(subject_pattern)
+        object_pattern = self.rdf_parser.encode_item(object_pattern)
+        predicate_pattern = self.rdf_parser.encode_item(predicate_pattern)
+        self.database.start_pipeline()
+        self.database.add_item(self.rdf_parser.build_key("subject", subject_pattern),
+                               self.rdf_parser.concatenate_items(predicate_pattern, object_pattern))
+        self.database.add_item(self.rdf_parser.build_key("predicate", predicate_pattern),
+                               self.rdf_parser.concatenate_items(subject_pattern, object_pattern))
+        self.database.add_item(self.rdf_parser.build_key("object", object_pattern),
+                               self.rdf_parser.concatenate_items(subject_pattern, predicate_pattern))
+        self.database.add_item(self.rdf_parser.build_key("subject-predicate",
+                                                         self.rdf_parser.concatenate_items(subject_pattern,
+                                                                                           predicate_pattern)),
+                               object_pattern)
+        self.database.add_item(self.rdf_parser.build_key("subject-object",
+                                                         self.rdf_parser.concatenate_items(subject_pattern,
+                                                                                           object_pattern)),
+                               predicate_pattern)
+        self.database.add_item(self.rdf_parser.build_key("predicate-object",
+                                                         self.rdf_parser.concatenate_items(predicate_pattern,
+                                                                                           object_pattern)),
+                               subject_pattern)
+
+        self.database.execute_commands()

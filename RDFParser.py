@@ -1,47 +1,31 @@
 from typing import List
+
 from rdflib import Graph
-from rdflib_hdt import HDTDocument, HDTStore
+
 from Database import Database
-import time
+
+BATCH_SIZE = 10000
 
 
 class RDFParser:
-
-    def __init__(self, graph_url: str) -> None:
-        url = "graphs/output.ttl"
-        # self.store = HDTStore("graphs/watdiv.10M.hdt")
-        # self.document = HDTDocument("graphs/watdiv.10M.hdt")
-        # self.graph = Graph(store=self.store)
-        #
-        # self.graph.serialize(format="xml", destination="graphs/output.xml")
-        # self.save_hdt_to_ttl_file()
-        #
-        # self.triples, self.cardinality = self.document.search((None, None, None))
+    def __init__(self, graph_name: str, url):
         self.graph = Graph()
-        self.graph_name = "watdiv"
-        parse_start_time = time.time()
-        self.graph.parse("graphs/output.ttl")
-
-        self.triples = self.graph
-        parse_end_time = time.time()
-        a = parse_end_time - parse_start_time
-        print("parsing time is ", a)
-        # self.graph.serialize(format="ttl", destination="graphs/dbpedia.ttl")
+        # add format=ttl in case triples are read from file
+        self.graph.parse(url, format='ttl')
+        self.graph_name = graph_name
         self.mapped_values = {}
         self.values_dict = {}
 
-    def save_hdt_to_ttl_file(self):
-        v = self.graph.serialize(format="ttl")
+    @staticmethod
+    def concatenate_items(value1: str, value2: str) -> str:
+        return f"{value1} - {value2}"
 
-    def get_all_triples(self):
-        all_triples = []
+    @staticmethod
+    def _split_concatenated_items(items: str) -> List[str]:
+        return items.split(" - ")
 
-        for s, p, o in self.graph:
-            s_prefix = s.n3(self.graph.namespace_manager)
-            p_prefix = p.n3(self.graph.namespace_manager)
-            o_prefix = o.n3(self.graph.namespace_manager)
-            all_triples.append((s_prefix, p_prefix, o_prefix))
-        return all_triples
+    def build_key(self, table_name, key):
+        return f"{self.graph_name}:{table_name}:{key}"
 
     def encode_item(self, value: str = None) -> str:
         items = value.split(":")
@@ -57,27 +41,25 @@ class RDFParser:
             encoded_value += ":"
         return encoded_value[:-1]
 
-    @staticmethod
-    def concatenate_items(value1: str, value2: str) -> str:
-        return f"{value1} - {value2}"
-
-    @staticmethod
-    def _split_concatenated_items(items: str) -> List[str]:
-        return items.split(" - ")
-
-    def decode_item(self, item: str) -> str:
+    def decode_item(self, item: bytes) -> str:
+        item = item.decode("utf-8")
         decoded_item = ""
         items = self._split_concatenated_items(item)
         for item in items:
             prefix_constant = item.split(":")
-            prefix = self.mapped_values[prefix_constant[0]]
-            constant_value = self.mapped_values[prefix_constant[1]]
-            decoded_item += f"{prefix}:{constant_value} "
+            try:
+                prefix = self.mapped_values[prefix_constant[0]]
+            except IndexError:
+                prefix = ''
+            try:
+                constant_value = ':' + self.mapped_values[prefix_constant[1]]
+            except IndexError:
+                constant_value = ''
+            decoded_item += f"{prefix}{constant_value} "
         return decoded_item[:-1]
 
-    def encode_var(self, var):
-        var_value = var.n3(self.graph.namespace_manager)
-        return self.encode_item(var_value)
+    def decode_items(self, items: List[str]):
+        return [self.decode_item(item) for item in items]
 
     def fill_data(self, db: Database) -> None:
         """
@@ -86,19 +68,17 @@ class RDFParser:
         :param db:
         :return:
         """
-        batch_size = 100000
+
         num_added = 0
 
-        for s, p, o in self.triples:
-            # encoded_subject = self.encode_var(s)
-            # encoded_predicate = self.encode_var(p)
-            # encoded_object = self.encode_var(o)
-            subject_pattern = str(s)
-            predicate_pattern = str(p)
-            object_pattern = str(o)
+        for s, p, o in self.graph:
+
+            subject_pattern = self.encode_item(s.n3(self.graph.namespace_manager))
+            predicate_pattern = self.encode_item(p.n3(self.graph.namespace_manager))
+            object_pattern = self.encode_item(o.n3(self.graph.namespace_manager))
 
             if num_added == 0:
-                db.start_bulk_add()
+                db.start_pipeline()
 
             db.add_item(self.build_key("subject", subject_pattern),
                         self.concatenate_items(predicate_pattern, object_pattern))
@@ -113,36 +93,11 @@ class RDFParser:
                         predicate_pattern)
             db.add_item(self.build_key("predicate-object", self.concatenate_items(predicate_pattern, object_pattern)),
                         subject_pattern)
-            db.add_item(self.build_key("subject-predicate-object", self.concatenate_items(subject_pattern, self.concatenate_items(predicate_pattern, object_pattern))),
-                        self.concatenate_items(subject_pattern, self.concatenate_items(predicate_pattern, object_pattern)))
 
             num_added += 1
 
-            if num_added - 1 == batch_size:
-                db.send_all()
+            if num_added == BATCH_SIZE:
+                db.execute_commands()
                 num_added = 0
-                # print("batch sent")
+        db.execute_commands()
 
-            # db.insert_item('subject.db',
-            #                encoded_subject,
-            #                self.concatenate_items(predicate_value, object_value))
-            # db.insert_item('predicate.db',
-            #                encoded_predicate,
-            #                self.concatenate_items(object_value, subject_value))
-            # db.insert_item('object.db',
-            #                encoded_object,
-            #                self.concatenate_items(subject_value, predicate_value))
-            # db.insert_item('subject-predicate.db',
-            #                self.concatenate_items(encoded_subject, encoded_predicate),
-            #                object_value)
-            # db.insert_item('predicate-object.db',
-            #                self.concatenate_items(encoded_object, encoded_predicate),
-            #                subject_value)
-            # db.insert_item('subject-object.db',
-            #                self.concatenate_items(encoded_subject, encoded_object),
-            #                predicate_value)
-        # db.save_all_db()
-        db.send_all()
-
-    def build_key(self, table_name, key):
-        return f"{self.graph_name}:{table_name}:{key}"
