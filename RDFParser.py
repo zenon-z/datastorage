@@ -18,9 +18,10 @@ class RDFParser:
         #
         # self.triples, self.cardinality = self.document.search((None, None, None))
         self.graph = Graph()
-        self.graph_name = "watdiv"
+        self.graph_name = "output"
         parse_start_time = time.time()
-        self.graph.parse("graphs/output.ttl")
+        if self.graph_name not in []:
+            self.graph.parse("graphs/output.ttl")
 
         self.triples = self.graph
         parse_end_time = time.time()
@@ -121,7 +122,7 @@ class RDFParser:
             if num_added - 1 == batch_size:
                 db.send_all()
                 num_added = 0
-                # print("batch sent")
+                print("batch sent")
 
             # db.insert_item('subject.db',
             #                encoded_subject,
