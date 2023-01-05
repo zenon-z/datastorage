@@ -39,26 +39,30 @@ def parse_command(command):
 
 if __name__ == '__main__':
     graph_url2 = 'https://dbpedia.org/ontology/data/definitions.ttl'
-    graph_url = "graphs/output.ttl"
+    graph_url = "graphs/dbpedia.ttl"
+    graph_name = "dbpedia"
     redis_db = Database("localhost", 6379, 0)
     start_time = time.time()
-    graph_parser = RDFParser("definitions", graph_url)
+    graph_parser = RDFParser(graph_name, graph_url)
     end_time = time.time()
     a = end_time - start_time
     print("parsing time is ", a)
     start_time = time.time()
-    graph_parser.fill_data(redis_db)
+    if not redis_db.graph_exists(graph_name):
+        graph_parser.fill_data(redis_db)
+    else:
+        graph_parser.load_all(redis_db)
     end_time = time.time()
     a = end_time - start_time
     print("loading time is ", a)
     evaluator = Evaluator(redis_db, graph_parser)
     evaluator.evaluate_all()
-    utilities = Utilities(redis_db, graph_parser)
-    utilities.add_triple('a', 'b', 'c')
-    utilities.add_triple('a', 'b', 'm')
-    utilities.add_triple('a', 'b', 'm')
-    print(utilities.get_triple(predicate_pattern='b'))
-    utilities.delete_triple('a','b', 'm')
-    print(utilities.get_triple(predicate_pattern='b'))
+    # utilities = Utilities(redis_db, graph_parser)
+    # utilities.add_triple('a', 'b', 'c')
+    # utilities.add_triple('a', 'b', 'm')
+    # utilities.add_triple('a', 'b', 'm')
+    # print(utilities.get_triple(predicate_pattern='b'))
+    # utilities.delete_triple('a', 'b', 'm')
+    # print(utilities.get_triple(predicate_pattern='b'))
 
 

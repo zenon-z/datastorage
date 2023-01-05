@@ -15,18 +15,19 @@ class Evaluator:
     def evaluate_pattern_type(self, all_keys: list):
         start_time = time.time() * 1000
         num_added = 0
+        output = []
+        all_keys = set(all_keys)
         for key in all_keys:
             if num_added == 0:
                 self.data_base.start_pipeline()
             self.data_base.get_item(key)
             num_added += 1
-            if num_added == BATCH_SIZE:
-                self.data_base.execute_commands()
-                self.data_base.start_pipeline()
+            if num_added - 1 == BATCH_SIZE:
+                output += self.data_base.execute_commands()
                 num_added = 0
         self.data_base.execute_commands()
         end_time = time.time() * 1000
-        return (end_time - start_time) / (2 * len(self.rdf_parser.graph))
+        return (end_time - start_time) / (len(all_keys))
 
 
     def evaluate_subject(self):

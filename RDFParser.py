@@ -70,13 +70,12 @@ class RDFParser:
         """
 
         num_added = 0
-
+        num_batches = 0
         for s, p, o in self.graph:
 
             subject_pattern = self.encode_item(s.n3(self.graph.namespace_manager))
             predicate_pattern = self.encode_item(p.n3(self.graph.namespace_manager))
             object_pattern = self.encode_item(o.n3(self.graph.namespace_manager))
-
             if num_added == 0:
                 db.start_pipeline()
 
@@ -86,7 +85,6 @@ class RDFParser:
                         self.concatenate_items(subject_pattern, object_pattern))
             db.add_item(self.build_key("object", object_pattern),
                         self.concatenate_items(subject_pattern, predicate_pattern))
-
             db.add_item(self.build_key("subject-predicate", self.concatenate_items(subject_pattern, predicate_pattern)),
                         object_pattern)
             db.add_item(self.build_key("subject-object", self.concatenate_items(subject_pattern, object_pattern)),
@@ -96,8 +94,18 @@ class RDFParser:
 
             num_added += 1
 
-            if num_added == BATCH_SIZE:
+            if num_added - 1 == BATCH_SIZE:
                 db.execute_commands()
                 num_added = 0
+                num_batches += 1
+                print(f"Batch sent: {num_batches}")
         db.execute_commands()
+        self.save_all(db)
 
+    def save_all(self, db):
+        db.set_dict(self.build_key("ids", "mapped_values"), self.mapped_values)
+        db.set_dict(self.build_key("ids", "values_dict"), self.mapped_values)
+
+    def load_all(self, db):
+        self.mapped_values = db.get_dict(self.build_key("ids", "mapped_values"))
+        self.mapped_values = db.get_dict(self.build_key("ids", "values_dict"))
