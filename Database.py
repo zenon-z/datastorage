@@ -1,5 +1,5 @@
 import redis
-
+import json
 
 class Database:
 
@@ -23,9 +23,6 @@ class Database:
     def get_item(self, key):
         return self.pipe.lrange(key, 0, -1)
 
-    def bulk_get(self, keys: list):
-        return self.pipe.mget(keys)
-
     def delete_item(self, key, value):
         self.db.lrem(key, 0, value)
 
@@ -34,8 +31,10 @@ class Database:
         return does_exist == 1
 
     def set_dict(self, key, value):
-        self.db.hset(key, value)
+        hashed_value = json.dumps(value)
+        self.db.set(key, hashed_value)
 
     def get_dict(self, key):
-        return self.db.hgetall(key)
+        hashed_value = self.db.get(key)
+        return json.loads(hashed_value)
 

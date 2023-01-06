@@ -16,16 +16,18 @@ class Evaluator:
         start_time = time.time() * 1000
         num_added = 0
         output = []
+        decoded_outputs = []
         all_keys = set(all_keys)
         for key in all_keys:
             if num_added == 0:
                 self.data_base.start_pipeline()
             self.data_base.get_item(key)
             num_added += 1
-            if num_added - 1 == BATCH_SIZE:
+            if num_added == BATCH_SIZE:
                 output += self.data_base.execute_commands()
                 num_added = 0
-        self.data_base.execute_commands()
+        output += self.data_base.execute_commands()
+        decoded_outputs += [self.rdf_parser.decode_items(x) for x in output]
         end_time = time.time() * 1000
         return (end_time - start_time) / (len(all_keys))
 

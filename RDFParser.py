@@ -94,18 +94,19 @@ class RDFParser:
 
             num_added += 1
 
-            if num_added - 1 == BATCH_SIZE:
+            if num_added == BATCH_SIZE:
                 db.execute_commands()
                 num_added = 0
                 num_batches += 1
                 print(f"Batch sent: {num_batches}")
+
         db.execute_commands()
         self.save_all(db)
 
     def save_all(self, db):
         db.set_dict(self.build_key("ids", "mapped_values"), self.mapped_values)
-        db.set_dict(self.build_key("ids", "values_dict"), self.mapped_values)
+        db.set_dict(self.build_key("ids", "values_dict"), self.values_dict)
 
     def load_all(self, db):
         self.mapped_values = db.get_dict(self.build_key("ids", "mapped_values"))
-        self.mapped_values = db.get_dict(self.build_key("ids", "values_dict"))
+        self.values_dict = db.get_dict(self.build_key("ids", "values_dict"))
