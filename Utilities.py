@@ -10,6 +10,21 @@ class Utilities:
         self.database = database
         self.rdf_parser = rdf_parser
 
+    def bulk_get_triple(self, triples):
+        output = []
+        for s, p, o in triples:
+            output += self.get_triple(s, p, o)
+
+        return output
+
+    def bulk_add_triple(self, triples):
+        for s, p, o in triples:
+            self.add_triple(s, p, o)
+
+    def bulk_delete_triple(self, triples):
+        for s, p, o in triples:
+            self.delete_triple(s, p, o)
+
     def get_triple(self,
                    subject_pattern: Optional[str] = "",
                    predicate_pattern: Optional[str] = "",
@@ -52,12 +67,17 @@ class Utilities:
             return self.rdf_parser.decode_items(self.database.get_item(item))
 
         if subject_pattern and predicate_pattern and object_pattern:
+            subject_pattern = self.rdf_parser.encode_item(subject_pattern)
             object_pattern = self.rdf_parser.encode_item(object_pattern)
             predicate_pattern = self.rdf_parser.encode_item(predicate_pattern)
-            item = self.rdf_parser.build_key("predicate-object",
-                                             self.rdf_parser.concatenate_items(predicate_pattern, object_pattern))
-            if subject_pattern in self.rdf_parser.decode_items(self.database.get_item(item)):
+            item = self.rdf_parser.build_key("subject-predicate-object",
+                                             self.rdf_parser.concatenate_items(subject_pattern,
+                                                                               self.rdf_parser.concatenate_items(
+                                                                                   predicate_pattern, object_pattern)))
+            if self.database.get_item(item):
                 return f"{subject_pattern} - {predicate_pattern} - {object_pattern}"
+            else:
+                return None
 
     def delete_triple(self,
                       subject_pattern: str,
@@ -66,23 +86,36 @@ class Utilities:
                       ) -> None:
         if not self.get_triple(subject_pattern, predicate_pattern, object_pattern):
             return
+
         subject_pattern = self.rdf_parser.encode_item(subject_pattern)
         object_pattern = self.rdf_parser.encode_item(object_pattern)
         predicate_pattern = self.rdf_parser.encode_item(predicate_pattern)
         self.database.delete_item(self.rdf_parser.build_key("subject", subject_pattern),
-                    self.rdf_parser.concatenate_items(predicate_pattern, object_pattern))
+                                  self.rdf_parser.concatenate_items(predicate_pattern, object_pattern))
         self.database.delete_item(self.rdf_parser.build_key("predicate", predicate_pattern),
-                    self.rdf_parser.concatenate_items(subject_pattern, object_pattern))
+                                  self.rdf_parser.concatenate_items(subject_pattern, object_pattern))
         self.database.delete_item(self.rdf_parser.build_key("object", object_pattern),
-                    self.rdf_parser.concatenate_items(subject_pattern, predicate_pattern))
+                                  self.rdf_parser.concatenate_items(subject_pattern, predicate_pattern))
 
-        self.database.delete_item(self.rdf_parser.build_key("subject-predicate", self.rdf_parser.concatenate_items(subject_pattern, predicate_pattern)),
-                    object_pattern)
-        self.database.delete_item(self.rdf_parser.build_key("subject-object", self.rdf_parser.concatenate_items(subject_pattern, object_pattern)),
-                    predicate_pattern)
-        self.database.delete_item(self.rdf_parser.build_key("predicate-object", self.rdf_parser.concatenate_items(predicate_pattern, object_pattern)),
-                    subject_pattern)
+        self.database.delete_item(self.rdf_parser.build_key("subject-predicate",
+                                                            self.rdf_parser.concatenate_items(subject_pattern,
+                                                                                              predicate_pattern)),
+                                  object_pattern)
+        self.database.delete_item(self.rdf_parser.build_key("subject-object",
+                                                            self.rdf_parser.concatenate_items(subject_pattern,
+                                                                                              object_pattern)),
+                                  predicate_pattern)
+        self.database.delete_item(self.rdf_parser.build_key("predicate-object",
+                                                            self.rdf_parser.concatenate_items(predicate_pattern,
+                                                                                              object_pattern)),
+                                  subject_pattern)
 
+        self.database.delete_item(self.rdf_parser.build_key("subject-predicate-object",
+                                                            self.rdf_parser.concatenate_items(subject_pattern,
+                                                                                              self.rdf_parser.concatenate_items(
+                                                                                                  predicate_pattern,
+                                                                                                  object_pattern))),
+                                  1)
 
     def add_triple(self,
                    subject_pattern: str,
@@ -113,5 +146,11 @@ class Utilities:
                                                          self.rdf_parser.concatenate_items(predicate_pattern,
                                                                                            object_pattern)),
                                subject_pattern)
+        self.database.add_item(self.rdf_parser.build_key("subject-predicate-object",
+                                                         self.rdf_parser.concatenate_items(subject_pattern,
+                                                                                           self.rdf_parser.concatenate_items(
+                                                                                               predicate_pattern,
+                                                                                               object_pattern))),
+                               1)
 
         self.database.execute_commands()

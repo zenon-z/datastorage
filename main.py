@@ -6,19 +6,19 @@ from RDFParser import RDFParser
 from Utilities import Utilities
 
 
-def check_add_get_delete(utilities):
-    obj = utilities.get_triple(subject_pattern="http://dbpedia.org/ontology/americanComedyAward")
-    print(obj)
-    utilities.delete_triple("http://dbpedia.org/ontology/americanComedyAward",
-                            "http://www.w3.org/2007/05/powder-s#describedby",
-                            "http://dbpedia.org/ontology/data/definitions.ttl")
-    obj = utilities.get_triple(subject_pattern="http://dbpedia.org/ontology/americanComedyAward")
-    print(obj)
-    utilities.add_triple("http://dbpedia.org/ontology/americanComedyAward",
-                         "http://www.w3.org/2007/05/powder-s#describedby",
-                         "http://dbpedia.org/ontology/data/definitions.ttl")
-    obj = utilities.get_triple(subject_pattern="http://dbpedia.org/ontology/americanComedyAward")
-    print(obj)
+# def check_add_get_delete(utilities):
+#     obj = utilities.get_triple(subject_pattern="http://dbpedia.org/ontology/americanComedyAward")
+#     print(obj)
+#     utilities.delete_triple("http://dbpedia.org/ontology/americanComedyAward",
+#                             "http://www.w3.org/2007/05/powder-s#describedby",
+#                             "http://dbpedia.org/ontology/data/definitions.ttl")
+#     obj = utilities.get_triple(subject_pattern="http://dbpedia.org/ontology/americanComedyAward")
+#     print(obj)
+#     utilities.add_triple("http://dbpedia.org/ontology/americanComedyAward",
+#                          "http://www.w3.org/2007/05/powder-s#describedby",
+#                          "http://dbpedia.org/ontology/data/definitions.ttl")
+#     obj = utilities.get_triple(subject_pattern="http://dbpedia.org/ontology/americanComedyAward")
+#     print(obj)
 """
 def parse_command(command):
     commands = ["ADD_TRIPLE", "QUERY_TRIPLE", "DELETE_TRIPLE", "BULK_ADD", "BULK_UPDATE", "BULK_DELETE"]
@@ -39,8 +39,8 @@ def parse_command(command):
 
 if __name__ == '__main__':
     graph_url2 = 'https://dbpedia.org/ontology/data/definitions.ttl'
-    graph_url = "graphs/dbpedia.ttl"
-    graph_name = "dbpedia"
+    graph_url = "graphs/output.ttl"
+    graph_name = "output"
     redis_db = Database("localhost", 6379, 0)
     start_time = time.time()
     graph_parser = RDFParser(graph_name, graph_url)

@@ -91,6 +91,8 @@ class RDFParser:
                         predicate_pattern)
             db.add_item(self.build_key("predicate-object", self.concatenate_items(predicate_pattern, object_pattern)),
                         subject_pattern)
+            db.add_item(self.build_key("subject-predicate-object", self.concatenate_items(subject_pattern, self.concatenate_items(predicate_pattern, object_pattern))),
+                        1)
 
             num_added += 1
 

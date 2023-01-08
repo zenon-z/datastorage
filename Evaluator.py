@@ -11,13 +11,20 @@ class Evaluator:
         self.utilities = Utilities(data_base, rdf_parser)
         self.rdf_parser = rdf_parser
         self.data_base = data_base
+        self.all_keys = {}
+        self.db_names = ["subject", "predicate", "object", "subject-predicate",
+                         "subject-object", "predicate-object", "subject-predicate-object"]
+        self.init_sets()
 
-    def evaluate_pattern_type(self, all_keys: list):
+    def init_sets(self):
+        for name in self.db_names:
+            self.all_keys[name] = set()
+
+    def evaluate_pattern_type(self, all_keys: list, decode_output=True):
         start_time = time.time() * 1000
         num_added = 0
         output = []
         decoded_outputs = []
-        all_keys = set(all_keys)
         for key in all_keys:
             if num_added == 0:
                 self.data_base.start_pipeline()
@@ -27,88 +34,65 @@ class Evaluator:
                 output += self.data_base.execute_commands()
                 num_added = 0
         output += self.data_base.execute_commands()
-        decoded_outputs += [self.rdf_parser.decode_items(x) for x in output]
+        if decode_output:
+            decoded_outputs += [self.rdf_parser.decode_items(x) for x in output]
         end_time = time.time() * 1000
         return (end_time - start_time) / (len(all_keys))
 
+    def add_key(self, db_name, key):
+        self.all_keys[db_name].add(self.rdf_parser.build_key(db_name, key))
+
+    def add_fake_key(self, db_name, key):
+        self.all_keys[db_name].add(self.rdf_parser.build_key(db_name, f"[{key}]"))
+
+    def create_evaluation_keys(self):
+        for s, p, o in self.rdf_parser.graph:
+            s = self.rdf_parser.encode_item(s.n3(self.rdf_parser.graph.namespace_manager))
+            p = self.rdf_parser.encode_item(p.n3(self.rdf_parser.graph.namespace_manager))
+            o = self.rdf_parser.encode_item(o.n3(self.rdf_parser.graph.namespace_manager))
+            # Real keys
+            self.add_key("subject", str(s))
+            self.add_key("predicate", str(p))
+            self.add_key("object", str(o))
+            self.add_key("subject-predicate", self.rdf_parser.concatenate_items(s, p))
+            self.add_key("subject-object", self.rdf_parser.concatenate_items(s, o))
+            self.add_key("predicate-object", self.rdf_parser.concatenate_items(p, o))
+            self.add_key("subject-predicate-object",
+                         self.rdf_parser.concatenate_items(s, self.rdf_parser.concatenate_items(p, o)))
+
+            # Fake keys
+            self.add_fake_key("subject", str(s))
+            self.add_fake_key("predicate", str(p))
+            self.add_fake_key("object", str(o))
+            self.add_fake_key("subject-predicate", self.rdf_parser.concatenate_items(s, p))
+            self.add_fake_key("subject-object", self.rdf_parser.concatenate_items(s, o))
+            self.add_fake_key("predicate-object", self.rdf_parser.concatenate_items(p, o))
+            self.add_fake_key("subject-predicate-object",
+                              self.rdf_parser.concatenate_items(s, self.rdf_parser.concatenate_items(p, o)))
 
     def evaluate_subject(self):
-        all_keys = []
-        for s, p, o in self.rdf_parser.graph:
-            s = self.rdf_parser.encode_item(s.n3(self.rdf_parser.graph.namespace_manager))
-            p = self.rdf_parser.encode_item(p.n3(self.rdf_parser.graph.namespace_manager))
-            o = self.rdf_parser.encode_item(o.n3(self.rdf_parser.graph.namespace_manager))
-            key = self.rdf_parser.build_key("subject", str(s))
-            all_keys.append(key)
-            key = self.rdf_parser.build_key("subject", str(o))
-            all_keys.append(key)
-        return self.evaluate_pattern_type(all_keys)
+        return self.evaluate_pattern_type(self.all_keys["subject"])
 
     def evaluate_predicate(self):
-        all_keys = []
-        for s, p, o in self.rdf_parser.graph:
-            s = self.rdf_parser.encode_item(s.n3(self.rdf_parser.graph.namespace_manager))
-            p = self.rdf_parser.encode_item(p.n3(self.rdf_parser.graph.namespace_manager))
-            o = self.rdf_parser.encode_item(o.n3(self.rdf_parser.graph.namespace_manager))
-            key = self.rdf_parser.build_key("predicate", str(p))
-            all_keys.append(key)
-            key = self.rdf_parser.build_key("predicate", str(o))
-            all_keys.append(key)
-        return self.evaluate_pattern_type(all_keys)
+        return self.evaluate_pattern_type(self.all_keys["predicate"])
 
     def evaluate_object(self):
-        all_keys = []
-        for s, p, o in self.rdf_parser.graph:
-            s = self.rdf_parser.encode_item(s.n3(self.rdf_parser.graph.namespace_manager))
-            p = self.rdf_parser.encode_item(p.n3(self.rdf_parser.graph.namespace_manager))
-            o = self.rdf_parser.encode_item(o.n3(self.rdf_parser.graph.namespace_manager))
-            key = self.rdf_parser.build_key("object", str(o))
-            all_keys.append(key)
-            key = self.rdf_parser.build_key("object", str(s))
-            all_keys.append(key)
-        return self.evaluate_pattern_type(all_keys)
+        return self.evaluate_pattern_type(self.all_keys["object"])
 
     def evaluate_subject_object(self):
-        all_keys = []
-        for s, p, o in self.rdf_parser.graph:
-            s = self.rdf_parser.encode_item(s.n3(self.rdf_parser.graph.namespace_manager))
-            p = self.rdf_parser.encode_item(p.n3(self.rdf_parser.graph.namespace_manager))
-            o = self.rdf_parser.encode_item(o.n3(self.rdf_parser.graph.namespace_manager))
-            key = self.rdf_parser.build_key("subject-object", self.rdf_parser.concatenate_items(s, o))
-            all_keys.append(key)
-            key = self.rdf_parser.build_key("subject-object", str(p))
-            all_keys.append(key)
-        return self.evaluate_pattern_type(all_keys)
+        return self.evaluate_pattern_type(self.all_keys["subject-object"])
 
     def evaluate_subject_predicate(self):
-        all_keys = []
-        for s, p, o in self.rdf_parser.graph:
-            s = self.rdf_parser.encode_item(s.n3(self.rdf_parser.graph.namespace_manager))
-            p = self.rdf_parser.encode_item(p.n3(self.rdf_parser.graph.namespace_manager))
-            o = self.rdf_parser.encode_item(o.n3(self.rdf_parser.graph.namespace_manager))
-            key = self.rdf_parser.build_key("subject-predicate", self.rdf_parser.concatenate_items(s, p))
-            all_keys.append(key)
-            key = self.rdf_parser.build_key("subject-predicate", str(o))
-            all_keys.append(key)
-        return self.evaluate_pattern_type(all_keys)
+        return self.evaluate_pattern_type(self.all_keys["subject-predicate"])
 
     def evaluate_predicate_object(self):
-        all_keys = []
-        for s, p, o in self.rdf_parser.graph:
-            s = self.rdf_parser.encode_item(s.n3(self.rdf_parser.graph.namespace_manager))
-            p = self.rdf_parser.encode_item(p.n3(self.rdf_parser.graph.namespace_manager))
-            o = self.rdf_parser.encode_item(o.n3(self.rdf_parser.graph.namespace_manager))
-            key = self.rdf_parser.build_key("predicate-object", self.rdf_parser.concatenate_items(p, o))
-            all_keys.append(key)
-            key = self.rdf_parser.build_key("predicate-object", str(s))
-            all_keys.append(key)
-        return self.evaluate_pattern_type(all_keys)
+        return self.evaluate_pattern_type(self.all_keys["predicate-object"])
 
     def evaluate_subject_predicate_object(self):
-        # can not be done with "bulk get", so the time will be too high
-        pass
+        return self.evaluate_pattern_type(self.all_keys["subject-predicate-object"], decode_output=False)
 
     def evaluate_all(self):
+        self.create_evaluation_keys()
         res0 = self.evaluate_subject_predicate_object()
         print(f"The time needed to search on a pattern that has everything is {res0} ms")
         res1 = self.evaluate_predicate_object()
