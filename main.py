@@ -1,6 +1,9 @@
 import time
 
+import rdf_loader
 from Database import Database
+from DataStorage import DataStorage
+from rdf_loader import RDFLoader
 from Evaluator import Evaluator
 from RDFParser import RDFParser
 from Utilities import Utilities
@@ -42,21 +45,24 @@ if __name__ == '__main__':
     graph_url = "graphs/output.ttl"
     graph_name = "output"
     redis_db = Database("localhost", 6379, 0)
+    db_storage = DataStorage()
     start_time = time.time()
-    graph_parser = RDFParser(graph_name, graph_url)
+    rdf_loader_obj = RDFLoader(graph_name)
+    rdf_loader.read_file(graph_url, rdf_loader_obj, db_storage)
+    # graph_parser = RDFParser(graph_name, graph_url)
     end_time = time.time()
     a = end_time - start_time
     print("parsing time is ", a)
-    start_time = time.time()
-    if not redis_db.graph_exists(graph_name):
-        graph_parser.fill_data(redis_db)
-    else:
-        graph_parser.load_all(redis_db)
-    end_time = time.time()
-    a = end_time - start_time
-    print("loading time is ", a)
-    evaluator = Evaluator(redis_db, graph_parser)
-    evaluator.evaluate_all()
+    # start_time = time.time()
+    # if not redis_db.graph_exists(graph_name):
+    #     graph_parser.fill_data(redis_db)
+    # else:
+    #     graph_parser.load_all(redis_db)
+    # end_time = time.time()
+    # a = end_time - start_time
+    # print("loading time is ", a)
+    # evaluator = Evaluator(redis_db, graph_parser)
+    # evaluator.evaluate_all()
     # utilities = Utilities(redis_db, graph_parser)
     # utilities.add_triple('a', 'b', 'c')
     # utilities.add_triple('a', 'b', 'm')

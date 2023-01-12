@@ -7,7 +7,9 @@ DATABASES_NAMES = ['subject.db',
                    'object.db',
                    'subject-predicate.db',
                    'subject-object.db',
-                   'predicate-object.db']
+                   'predicate-object.db',
+                   'subject-predicate-object.db']
+
 DIRECTORY = 'databases/'
 
 
@@ -37,11 +39,13 @@ class DataStorage:
     def _append_item(self, db_name: str, key: str, more: str) -> None:
         return self.databases[db_name].append(key, f"\n{more}")
 
-    def insert_item(self, db_name: str, key: str, value: str) -> None:
-        if not self.get_item(db_name, key):
-            self._set_item(db_name, key, value)
+    def add_item(self, db_name: str, key: str, value: str) -> None:
+        item = self.get_item(db_name, key)
+        if not item:
+            self._set_item(db_name, key, [value])
         else:
-            self._append_item(db_name, key, value)
+            item.append(value)
+            self._set_item(db_name, key, item)
 
     def get_keys(self, db_name) -> List[str]:
         return self.databases[db_name].getall()
