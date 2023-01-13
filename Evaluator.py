@@ -35,10 +35,10 @@ class Evaluator:
         return (end_time - start_time) / (len(all_keys))
 
     def add_key(self, db_name, key):
-        self.all_keys[db_name].add(rdf_loader.build_key(self.graph_name, db_name, key))
+        self.all_keys[db_name].add(rdf_loader.build_key(key))
 
     def add_fake_key(self, db_name, key):
-        self.all_keys[db_name].add(rdf_loader.build_key(self.graph_name, db_name, f"[{key}]"))
+        self.all_keys[db_name].add(rdf_loader.build_key(f"[{key}]"))
 
     def create_evaluation_keys(self):
         print("Key creation")
@@ -65,6 +65,7 @@ class Evaluator:
 
             num_added += 1
             if num_added == 1000:
+                num_batches += 1
                 print(f"Batch processed {num_batches*1000}")
                 num_added = 0
 

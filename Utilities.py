@@ -48,32 +48,27 @@ class Utilities:
         if subject_pattern and object_pattern and (not predicate_pattern):
             subject_pattern = self.rdf_parser.encode_item(subject_pattern)
             object_pattern = self.rdf_parser.encode_item(object_pattern)
-            item = self.rdf_parser.build_key("subject-object",
-                                             self.rdf_parser.concatenate_items(subject_pattern, object_pattern))
+            item = self.rdf_parser.build_key("subject-object", (subject_pattern, object_pattern))
             return self.rdf_parser.decode_items(self.database.get_item(item))
 
         if subject_pattern and predicate_pattern and (not object_pattern):
             subject_pattern = self.rdf_parser.encode_item(subject_pattern)
             predicate_pattern = self.rdf_parser.encode_item(predicate_pattern)
-            item = self.rdf_parser.build_key("subject-predicate",
-                                             self.rdf_parser.concatenate_items(subject_pattern, predicate_pattern))
+            item = self.rdf_parser.build_key("subject-predicate", (subject_pattern, predicate_pattern))
             return self.rdf_parser.decode_items(self.database.get_item(item))
 
         if object_pattern and predicate_pattern and (not subject_pattern):
             object_pattern = self.rdf_parser.encode_item(object_pattern)
             predicate_pattern = self.rdf_parser.encode_item(predicate_pattern)
-            item = self.rdf_parser.build_key("predicate-object",
-                                             self.rdf_parser.concatenate_items(predicate_pattern, object_pattern))
+            item = self.rdf_parser.build_key("predicate-object", (predicate_pattern, object_pattern))
             return self.rdf_parser.decode_items(self.database.get_item(item))
 
         if subject_pattern and predicate_pattern and object_pattern:
             subject_pattern = self.rdf_parser.encode_item(subject_pattern)
             object_pattern = self.rdf_parser.encode_item(object_pattern)
             predicate_pattern = self.rdf_parser.encode_item(predicate_pattern)
-            item = self.rdf_parser.build_key("subject-predicate-object",
-                                             self.rdf_parser.concatenate_items(subject_pattern,
-                                                                               self.rdf_parser.concatenate_items(
-                                                                                   predicate_pattern, object_pattern)))
+            item = self.rdf_parser.build_key("subject-predicate-object", (subject_pattern, predicate_pattern, object_pattern))
+
             if self.database.get_item(item):
                 return f"{subject_pattern} - {predicate_pattern} - {object_pattern}"
             else:

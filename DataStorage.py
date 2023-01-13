@@ -42,7 +42,7 @@ class DataStorage:
         return value if value else []
 
     def _append_item(self, db_name: str, key: str, more: str) -> None:
-        return self.databases[db_name].append(key, f"\n{more}")
+        return self.databases[db_name].append(key, more)
 
     def add_item(self, db_name: str, key: str, value: str) -> None:
         item = self.get_item(db_name, key)

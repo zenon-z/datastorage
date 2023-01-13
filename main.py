@@ -41,8 +41,8 @@ def parse_command(command):
 
 if __name__ == '__main__':
     graph_url2 = 'https://dbpedia.org/ontology/data/definitions.ttl'
-    graph_url = "graphs/dbpedia.ttl"
-    graph_name = "dbpedia"
+    graph_url = "graphs/output.ttl"
+    graph_name = "output"
     redis_db = Database("localhost", 6379, 0)
     db_storage = DataStorage()
     start_time = time.time()

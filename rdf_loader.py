@@ -46,30 +46,41 @@ def process_data(encoded_triples, db, graph_name):
     num_batches = 0
 
     for encoded_s, encoded_p, encoded_o in encoded_triples:
-        db.add_item("subject.db", build_key(graph_name, "subject", encoded_s), (encoded_p, encoded_o))
-        db.add_item("predicate.db", build_key(graph_name, "predicate", encoded_p), (encoded_s, encoded_o))
-        db.add_item("object.db", build_key(graph_name, "object", encoded_o), (encoded_s, encoded_p))
-        db.add_item("subject-predicate.db", build_key(graph_name, "subject-predicate", (encoded_s, encoded_p)),
-                    encoded_o)
-        db.add_item("subject-object.db", build_key(graph_name, "subject-object", (encoded_s, encoded_o)), encoded_p)
-        db.add_item("predicate-object.db", build_key(graph_name, "predicate-object", (encoded_p, encoded_o)), encoded_s)
-        db.add_item("subject-predicate-object.db", build_key(graph_name, "subject-predicate-object", (encoded_s,
-                                                                                                      encoded_p,
-                                                                                                      encoded_o)), 1)
+        db.add_item("subject.db", build_key(encoded_s), (encoded_p, encoded_o))
+        db.add_item("predicate.db", build_key(encoded_p), (encoded_s, encoded_o))
+        db.add_item("object.db", build_key(encoded_o), (encoded_s, encoded_p))
+        db.add_item("subject-predicate.db", build_key((encoded_s, encoded_p)), encoded_o)
+        db.add_item("subject-object.db", build_key((encoded_s, encoded_o)), encoded_p)
+        db.add_item("predicate-object.db", build_key((encoded_p, encoded_o)), encoded_s)
+        db.add_item("subject-predicate-object.db", build_key((encoded_s, encoded_p, encoded_o)), 1)
         num_added += 1
 
-        if num_added == 1000:
+        if num_added == 10000:
             num_added = 0
             num_batches += 1
-            print(f"Batch sent: {num_batches*1000}")
+            print(f"Batch sent: {num_batches * 10000}")
 
 
-def build_key(graph_name, table_name, key):
-    # key = str(key).encode()
-    # byte_length = (key.bit_length() + 7) // 8
-    # key = key.to_bytes(byte_length, 'big')
+# def build_key(graph_name, table_name, key):
+#     return str(key)
+
+
+def build_key(key):
+    if type(key) is tuple:
+        key = "".join([str(x) for x in list(key)])
     return str(key)
-    # return f"{graph_name}:{table_name}:{key}"
+
+    # encoded_key = b''
+    # if type(key) is tuple:
+    #     for x in key:
+    #         byte_length = (x.bit_length() + 7) // 8
+    #         x = x.to_bytes(byte_length, 'big')
+    #         encoded_key += x
+    # else:
+    #     byte_length = (key.bit_length() + 7) // 8
+    #     encoded_key = key.to_bytes(byte_length, 'big')
+    #
+    # return str(encoded_key)
 
 
 class RDFLoader:
@@ -84,8 +95,6 @@ class RDFLoader:
             encoded_value = self.values_dict[value]
         except KeyError:
             mapped_id = len(self.mapped_values)
-            # if mapped_id < 10:
-            #     mapped_id = str(mapped_id)
             self.mapped_values[mapped_id] = value
             self.values_dict[value] = mapped_id
             encoded_value = mapped_id
@@ -93,17 +102,20 @@ class RDFLoader:
 
     def decode_item(self, item: bytes) -> tuple:
         decoded = []
-        for results in item:
-            decoded.append(self.mapped_values[results])
+        try:
+            for results in item:
+                decoded.append(self.mapped_values[results])
+        except TypeError:
+            decoded.append(self.mapped_values[item])
         return tuple(decoded)
 
     def decode_items(self, items: List[str]):
         return [self.decode_item(item) for item in items]
 
     def save_all(self, db):
-        db.set_dict(build_key(self.graph_name, "ids", "mapped_values"), self.mapped_values)
-        db.set_dict(build_key(self.graph_name, "ids", "values_dict"), self.values_dict)
+        db.set_dict("mapped_values", self.mapped_values)
+        # db.set_dict(build_key(self.graph_name, "ids", "values_dict"), self.values_dict)
 
     def load_all(self, db):
-        self.mapped_values = db.get_dict(build_key(self.graph_name, "ids", "mapped_values"))
-        self.values_dict = db.get_dict(build_key(self.graph_name, "ids", "values_dict"))
+        self.mapped_values = db.get_dict("mapped_values")
+        # self.values_dict = db.get_dict(build_key(self.graph_name, "ids", "values_dict"))
