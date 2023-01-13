@@ -1,6 +1,7 @@
 import redis
 import json
 
+
 class Database:
 
     def __init__(self, host, port, db_num):
@@ -38,4 +39,3 @@ class Database:
     def get_dict(self, key):
         hashed_value = self.db.get(key)
         return json.loads(hashed_value)
-

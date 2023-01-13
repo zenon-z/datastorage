@@ -48,8 +48,16 @@ if __name__ == '__main__':
     db_storage = DataStorage()
     start_time = time.time()
     rdf_loader_obj = RDFLoader(graph_name)
-    rdf_loader.read_file(graph_url, rdf_loader_obj, db_storage)
-    # graph_parser = RDFParser(graph_name, graph_url)
+    encoded_triples = rdf_loader.read_file(graph_url, rdf_loader_obj, db_storage)
+    if db_storage.graph_exists(graph_name):
+        print("Graph exists")
+        rdf_loader_obj.load_all(redis_db)
+    else:
+        print("Graph dont exist")
+        rdf_loader.process_data(encoded_triples, db_storage, graph_name)
+        rdf_loader_obj.save_all(redis_db)
+
+    graph_parser = RDFParser(graph_name, graph_url)
     end_time = time.time()
     a = end_time - start_time
     print("parsing time is ", a)
@@ -61,8 +69,8 @@ if __name__ == '__main__':
     # end_time = time.time()
     # a = end_time - start_time
     # print("loading time is ", a)
-    # evaluator = Evaluator(redis_db, graph_parser)
-    # evaluator.evaluate_all()
+    evaluator = Evaluator(db_storage, graph_parser, encoded_triples, graph_name, rdf_loader_obj)
+    evaluator.evaluate_all()
     # utilities = Utilities(redis_db, graph_parser)
     # utilities.add_triple('a', 'b', 'c')
     # utilities.add_triple('a', 'b', 'm')

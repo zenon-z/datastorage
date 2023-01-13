@@ -30,11 +30,16 @@ class DataStorage:
         for db_name in DATABASES_NAMES:
             self.save_db(db_name)
 
+    def graph_exists(self, graph_name):
+        does_exist = self.databases['subject.db'].get(f"{graph_name}:subject:0")
+        return does_exist is not False
+
     def _set_item(self, db_name: str, key: str, value: str) -> None:
         self.databases[db_name].set(key, value)
 
     def get_item(self, db_name: str, key: str) -> Union[str, List[str]]:
-        return self.databases[db_name].get(key)
+        value = self.databases[db_name].get(key)
+        return value if value else []
 
     def _append_item(self, db_name: str, key: str, more: str) -> None:
         return self.databases[db_name].append(key, f"\n{more}")
