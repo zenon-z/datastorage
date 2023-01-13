@@ -11,7 +11,7 @@ class RDFParser:
     def __init__(self, graph_name: str, url):
         self.graph = Graph()
         # add format=ttl in case triples are read from file
-        self.graph.parse(url, format='ttl')
+        # self.graph.parse(url, format='ttl')
         self.graph_name = graph_name
         self.mapped_values = {}
         self.values_dict = {}

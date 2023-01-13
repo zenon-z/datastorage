@@ -6,7 +6,7 @@ class Database:
 
     def __init__(self, host, port, db_num):
         self.db = redis.StrictRedis(host=host, port=port, db=db_num)
-        # self.db.flushdb()
+        self.db.flushdb()
         self.pipe = self.db
 
     def start_pipeline(self):

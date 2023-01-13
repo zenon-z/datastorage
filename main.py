@@ -8,7 +8,6 @@ from Evaluator import Evaluator
 from RDFParser import RDFParser
 from Utilities import Utilities
 
-
 # def check_add_get_delete(utilities):
 #     obj = utilities.get_triple(subject_pattern="http://dbpedia.org/ontology/americanComedyAward")
 #     print(obj)
@@ -42,8 +41,8 @@ def parse_command(command):
 
 if __name__ == '__main__':
     graph_url2 = 'https://dbpedia.org/ontology/data/definitions.ttl'
-    graph_url = "graphs/output.ttl"
-    graph_name = "output"
+    graph_url = "graphs/dbpedia.ttl"
+    graph_name = "dbpedia"
     redis_db = Database("localhost", 6379, 0)
     db_storage = DataStorage()
     start_time = time.time()
@@ -57,10 +56,18 @@ if __name__ == '__main__':
         rdf_loader.process_data(encoded_triples, db_storage, graph_name)
         rdf_loader_obj.save_all(redis_db)
 
-    graph_parser = RDFParser(graph_name, graph_url)
     end_time = time.time()
     a = end_time - start_time
-    print("parsing time is ", a)
+    print("loading time is ", a)
+
+    print("Saving to file now...")
+    start_time = time.time()
+    db_storage.save_all_db()
+    end_time = time.time()
+    a = end_time - start_time
+    print("saving time is ", a)
+
+    # graph_parser = RDFParser(graph_name, graph_url)
     # start_time = time.time()
     # if not redis_db.graph_exists(graph_name):
     #     graph_parser.fill_data(redis_db)
@@ -69,7 +76,8 @@ if __name__ == '__main__':
     # end_time = time.time()
     # a = end_time - start_time
     # print("loading time is ", a)
-    evaluator = Evaluator(db_storage, graph_parser, encoded_triples, graph_name, rdf_loader_obj)
+    print("Starting evaluation")
+    evaluator = Evaluator(db_storage, encoded_triples, graph_name, rdf_loader_obj)
     evaluator.evaluate_all()
     # utilities = Utilities(redis_db, graph_parser)
     # utilities.add_triple('a', 'b', 'c')
@@ -78,5 +86,3 @@ if __name__ == '__main__':
     # print(utilities.get_triple(predicate_pattern='b'))
     # utilities.delete_triple('a', 'b', 'm')
     # print(utilities.get_triple(predicate_pattern='b'))
-
-

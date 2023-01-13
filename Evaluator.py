@@ -8,9 +8,7 @@ import rdf_loader
 
 class Evaluator:
 
-    def __init__(self, db: Database, rdf_parser: RDFParser, encoded_triples: list(), graph_name: str, rdf_loader_obj):
-        self.utilities = Utilities(db, rdf_parser)
-        self.rdf_parser = rdf_parser
+    def __init__(self, db: Database, encoded_triples: list(), graph_name: str, rdf_loader_obj):
         self.rdf_loader_obj = rdf_loader_obj
         self.graph_name = graph_name
         self.encoded_triples = encoded_triples
@@ -25,6 +23,7 @@ class Evaluator:
             self.all_keys[name] = set()
 
     def evaluate_pattern_type(self, db_name: str, all_keys: list, decode_output=True):
+        print(f"Evaluation of {db_name}")
         start_time = time.time() * 1000
         output = []
         for key in all_keys:
@@ -42,6 +41,9 @@ class Evaluator:
         self.all_keys[db_name].add(rdf_loader.build_key(self.graph_name, db_name, f"[{key}]"))
 
     def create_evaluation_keys(self):
+        print("Key creation")
+        num_added = 0
+        num_batches = 0
         for s, p, o in self.encoded_triples:
             # Real keys
             self.add_key("subject", str(s))
@@ -60,6 +62,11 @@ class Evaluator:
             self.add_fake_key("subject-object", (s, o))
             self.add_fake_key("predicate-object", (p, o))
             self.add_fake_key("subject-predicate-object", (s, p, o))
+
+            num_added += 1
+            if num_added == 1000:
+                print(f"Batch processed {num_batches*1000}")
+                num_added = 0
 
     def evaluate_subject(self):
         return self.evaluate_pattern_type("subject.db", self.all_keys["subject"])

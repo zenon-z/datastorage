@@ -58,17 +58,18 @@ def process_data(encoded_triples, db, graph_name):
                                                                                                       encoded_o)), 1)
         num_added += 1
 
-        if num_added == 10000:
+        if num_added == 1000:
             num_added = 0
             num_batches += 1
-            print(f"Batch sent: {num_batches}")
-
-    print("Saving to file now...")
-    db.save_all_db()
+            print(f"Batch sent: {num_batches*1000}")
 
 
 def build_key(graph_name, table_name, key):
-    return f"{graph_name}:{table_name}:{key}"
+    # key = str(key).encode()
+    # byte_length = (key.bit_length() + 7) // 8
+    # key = key.to_bytes(byte_length, 'big')
+    return str(key)
+    # return f"{graph_name}:{table_name}:{key}"
 
 
 class RDFLoader:
@@ -82,7 +83,9 @@ class RDFLoader:
         try:
             encoded_value = self.values_dict[value]
         except KeyError:
-            mapped_id = str(len(self.mapped_values))
+            mapped_id = len(self.mapped_values)
+            # if mapped_id < 10:
+            #     mapped_id = str(mapped_id)
             self.mapped_values[mapped_id] = value
             self.values_dict[value] = mapped_id
             encoded_value = mapped_id
