@@ -1,7 +1,19 @@
 from typing import List
+import time
 
 
-def read_file(filename, rdf_loader, db):
+DATABASES_NAMES = ['subject.db',
+                   'predicate.db',
+                   'object.db',
+                   'subject-predicate.db',
+                   'subject-object.db',
+                   'predicate-object.db',
+                   'subject-predicate-object.db']
+
+alphabet_dict = {str(k+10): v for (k, v) in enumerate("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")}
+
+
+def read_file(filename, rdf_loader):
     f = open(filename, "r")
     encoded_triples = []
     current_s = ""
@@ -41,46 +53,43 @@ def read_file(filename, rdf_loader, db):
     return encoded_triples
 
 
-def process_data(encoded_triples, db, graph_name):
+def process_data(encoded_triples, db):
     num_added = 0
     num_batches = 0
-
+    batch_times = []
     for encoded_s, encoded_p, encoded_o in encoded_triples:
-        db.add_item("subject.db", build_key(encoded_s), (encoded_p, encoded_o))
-        db.add_item("predicate.db", build_key(encoded_p), (encoded_s, encoded_o))
-        db.add_item("object.db", build_key(encoded_o), (encoded_s, encoded_p))
-        db.add_item("subject-predicate.db", build_key((encoded_s, encoded_p)), encoded_o)
-        db.add_item("subject-object.db", build_key((encoded_s, encoded_o)), encoded_p)
-        db.add_item("predicate-object.db", build_key((encoded_p, encoded_o)), encoded_s)
-        db.add_item("subject-predicate-object.db", build_key((encoded_s, encoded_p, encoded_o)), 1)
+        start_time = time.time()
+        db.add_item("subject.db", f"{encoded_s}", (encoded_p, encoded_o))
+        db.add_item("predicate.db", f"{encoded_p}", (encoded_s, encoded_o))
+        db.add_item("object.db", f"{encoded_o}", (encoded_s, encoded_p))
+        db.add_item("subject-predicate.db", f"{encoded_s}{encoded_p}", encoded_o)
+        db.add_item("subject-object.db", f"{encoded_s}{encoded_o}", encoded_p)
+        db.add_item("predicate-object.db", f"{encoded_p}{encoded_o}", encoded_s)
+        db.add_item("subject-predicate-object.db", f"{encoded_s}{encoded_p}{encoded_o}", 1)
         num_added += 1
 
         if num_added == 10000:
             num_added = 0
             num_batches += 1
             print(f"Batch sent: {num_batches * 10000}")
+            end_time = time.time()
+            batch_times.append(end_time - start_time)
+
+    return batch_times
 
 
-# def build_key(graph_name, table_name, key):
-#     return str(key)
+def lookup(value):
+    try:
+        return alphabet_dict[value]
+    except KeyError:
+        return value
 
 
 def build_key(key):
-    if type(key) is tuple:
-        key = "".join([str(x) for x in list(key)])
-    return str(key)
+    # split_key = re.findall('..?', str(key))
+    # output = "".join([lookup(elem) for elem in split_key])
 
-    # encoded_key = b''
-    # if type(key) is tuple:
-    #     for x in key:
-    #         byte_length = (x.bit_length() + 7) // 8
-    #         x = x.to_bytes(byte_length, 'big')
-    #         encoded_key += x
-    # else:
-    #     byte_length = (key.bit_length() + 7) // 8
-    #     encoded_key = key.to_bytes(byte_length, 'big')
-    #
-    # return str(encoded_key)
+    return key
 
 
 class RDFLoader:

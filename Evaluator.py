@@ -32,6 +32,8 @@ class Evaluator:
         if decode_output:
             decoded_outputs = [self.rdf_loader_obj.decode_items(x) for x in output]
         end_time = time.time() * 1000
+
+        all_keys.clear()
         return (end_time - start_time) / (len(all_keys))
 
     def add_key(self, db_name, key):
@@ -88,6 +90,7 @@ class Evaluator:
         return self.evaluate_pattern_type("predicate-object.db", self.all_keys["predicate-object"])
 
     def evaluate_subject_predicate_object(self):
+        pass
         return self.evaluate_pattern_type("subject-predicate-object.db", self.all_keys["subject-predicate-object"], decode_output=False)
 
     def evaluate_all(self):

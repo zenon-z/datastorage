@@ -2,6 +2,8 @@ from typing import Union, List
 
 import pickledb as pickledb
 
+DIRECTORY = 'databases/'
+
 DATABASES_NAMES = ['subject.db',
                    'predicate.db',
                    'object.db',
@@ -9,8 +11,6 @@ DATABASES_NAMES = ['subject.db',
                    'subject-object.db',
                    'predicate-object.db',
                    'subject-predicate-object.db']
-
-DIRECTORY = 'databases/'
 
 
 class DataStorage:
@@ -31,8 +31,9 @@ class DataStorage:
             self.save_db(db_name)
 
     def graph_exists(self, graph_name):
-        does_exist = self.databases['subject.db'].get(f"{graph_name}:subject:0")
-        return does_exist is not False
+        does_exist = self.databases['subject.db'].get(f"0")
+
+        return does_exist is not False and does_exist is not None
 
     def _set_item(self, db_name: str, key: str, value: str) -> None:
         self.databases[db_name].set(key, value)

@@ -43,29 +43,35 @@ if __name__ == '__main__':
     graph_url2 = 'https://dbpedia.org/ontology/data/definitions.ttl'
     graph_url = "graphs/output.ttl"
     graph_name = "output"
+
     redis_db = Database("localhost", 6379, 0)
     db_storage = DataStorage()
     start_time = time.time()
     rdf_loader_obj = RDFLoader(graph_name)
-    encoded_triples = rdf_loader.read_file(graph_url, rdf_loader_obj, db_storage)
+    encoded_triples = rdf_loader.read_file(graph_url, rdf_loader_obj)
+    file_read_time = time.time()
+    print(f"File reading took: {file_read_time - start_time}")
     if db_storage.graph_exists(graph_name):
         print("Graph exists")
         rdf_loader_obj.load_all(redis_db)
     else:
         print("Graph dont exist")
-        rdf_loader.process_data(encoded_triples, db_storage, graph_name)
+        batch_times = rdf_loader.process_data(encoded_triples, db_storage)
+        with open(r'databases/batch_times.txt', 'w') as fp:
+            for batch_time in batch_times:
+                fp.write(f"{batch_time}\n")
         rdf_loader_obj.save_all(redis_db)
 
-    end_time = time.time()
-    a = end_time - start_time
-    print("loading time is ", a)
+        end_time = time.time()
+        a = end_time - start_time
+        print("loading time is ", a)
 
-    print("Saving to file now...")
-    start_time = time.time()
-    db_storage.save_all_db()
-    end_time = time.time()
-    a = end_time - start_time
-    print("saving time is ", a)
+        print("Saving to file now...")
+        start_time = time.time()
+        db_storage.save_all_db()
+        end_time = time.time()
+        a = end_time - start_time
+        print("saving time is ", a)
 
     # graph_parser = RDFParser(graph_name, graph_url)
     # start_time = time.time()
