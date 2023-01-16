@@ -58,7 +58,9 @@ def process_data(encoded_triples, db):
     num_batches = 0
     batch_times = []
     for encoded_s, encoded_p, encoded_o in encoded_triples:
-        start_time = time.time()
+        if num_added == 0:
+            start_time = time.time()
+
         db.add_item("subject.db", f"{encoded_s}", (encoded_p, encoded_o))
         db.add_item("predicate.db", f"{encoded_p}", (encoded_s, encoded_o))
         db.add_item("object.db", f"{encoded_o}", (encoded_s, encoded_p))

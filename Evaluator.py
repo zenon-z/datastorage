@@ -4,6 +4,7 @@ from Database import Database
 from RDFParser import RDFParser, BATCH_SIZE
 from Utilities import Utilities
 import rdf_loader
+import random_triple_generator
 
 
 class Evaluator:
@@ -33,43 +34,31 @@ class Evaluator:
             decoded_outputs = [self.rdf_loader_obj.decode_items(x) for x in output]
         end_time = time.time() * 1000
 
+        num_keys = len(all_keys)
         all_keys.clear()
-        return (end_time - start_time) / (len(all_keys))
+        return (end_time - start_time) / num_keys
 
     def add_key(self, db_name, key):
-        self.all_keys[db_name].add(rdf_loader.build_key(key))
+        self.all_keys[db_name].add(key)
 
     def add_fake_key(self, db_name, key):
         self.all_keys[db_name].add(rdf_loader.build_key(f"[{key}]"))
 
-    def create_evaluation_keys(self):
-        print("Key creation")
-        num_added = 0
-        num_batches = 0
-        for s, p, o in self.encoded_triples:
-            # Real keys
-            self.add_key("subject", str(s))
-            self.add_key("predicate", str(p))
-            self.add_key("object", str(o))
-            self.add_key("subject-predicate", (s, p))
-            self.add_key("subject-object", (s, o))
-            self.add_key("predicate-object", (p, o))
-            self.add_key("subject-predicate-object", (s, p, o))
-
-            # Fake keys
-            self.add_fake_key("subject", str(s))
-            self.add_fake_key("predicate", str(p))
-            self.add_fake_key("object", str(o))
-            self.add_fake_key("subject-predicate", (s, p))
-            self.add_fake_key("subject-object", (s, o))
-            self.add_fake_key("predicate-object", (p, o))
-            self.add_fake_key("subject-predicate-object", (s, p, o))
-
-            num_added += 1
-            if num_added == 1000:
-                num_batches += 1
-                print(f"Batch processed {num_batches*1000}")
-                num_added = 0
+    def get_keys(self):
+        random_keys = random_triple_generator.get_random_triples(f"{self.graph_name}.ttl")
+        for key in random_keys.keys():
+            for line in random_keys[key]:
+                triple = line.split(" ")
+                s = triple[0]
+                p = triple[1]
+                o = triple[2]
+                self.add_key("subject", f"{s}")
+                self.add_key("predicate", f"{p}")
+                self.add_key("object", f"{o}")
+                self.add_key("subject-predicate", f"{s}{p}")
+                self.add_key("subject-object", f"{s}{o}")
+                self.add_key("predicate-object", f"{p}{o}")
+                self.add_key("subject-predicate-object", f"{s}{p}{o}")
 
     def evaluate_subject(self):
         return self.evaluate_pattern_type("subject.db", self.all_keys["subject"])
@@ -90,11 +79,12 @@ class Evaluator:
         return self.evaluate_pattern_type("predicate-object.db", self.all_keys["predicate-object"])
 
     def evaluate_subject_predicate_object(self):
-        pass
-        return self.evaluate_pattern_type("subject-predicate-object.db", self.all_keys["subject-predicate-object"], decode_output=False)
+        return self.evaluate_pattern_type("subject-predicate-object.db", self.all_keys["subject-predicate-object"],
+                                          decode_output=False)
 
     def evaluate_all(self):
-        self.create_evaluation_keys()
+        # self.create_evaluation_keys()
+        self.get_keys()
         res0 = self.evaluate_subject_predicate_object()
         print(f"The time needed to search on a pattern that has everything is {res0} ms")
         res1 = self.evaluate_predicate_object()
