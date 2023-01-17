@@ -2,18 +2,7 @@ from typing import List
 import time
 
 
-DATABASES_NAMES = ['subject.db',
-                   'predicate.db',
-                   'object.db',
-                   'subject-predicate.db',
-                   'subject-object.db',
-                   'predicate-object.db',
-                   'subject-predicate-object.db']
-
-alphabet_dict = {str(k+10): v for (k, v) in enumerate("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")}
-
-
-def read_file(filename, rdf_loader):
+def read_file(filename, rdf_loader, encoded=True):
     f = open(filename, "r")
     encoded_triples = []
     current_s = ""
@@ -42,12 +31,14 @@ def read_file(filename, rdf_loader):
             elif previous_line_ending == ",":
                 o = line[0:-2]
 
-            encoded_s = rdf_loader.encode_item(current_s)
+            if encoded:
+                encoded_s = rdf_loader.encode_item(current_s)
+                encoded_p = rdf_loader.encode_item(current_p)
+                encoded_o = rdf_loader.encode_item(o)
+                encoded_triples.append((encoded_s, encoded_p, encoded_o))
+            else:
+                encoded_triples.append((current_s, current_p, o))
 
-            encoded_p = rdf_loader.encode_item(current_p)
-            encoded_o = rdf_loader.encode_item(o)
-
-            encoded_triples.append((encoded_s, encoded_p, encoded_o))
             previous_line_ending = line[-1]
 
     return encoded_triples
@@ -64,10 +55,10 @@ def process_data(encoded_triples, db):
         db.add_item("subject.db", f"{encoded_s}", (encoded_p, encoded_o))
         db.add_item("predicate.db", f"{encoded_p}", (encoded_s, encoded_o))
         db.add_item("object.db", f"{encoded_o}", (encoded_s, encoded_p))
-        db.add_item("subject-predicate.db", f"{encoded_s}{encoded_p}", encoded_o)
-        db.add_item("subject-object.db", f"{encoded_s}{encoded_o}", encoded_p)
-        db.add_item("predicate-object.db", f"{encoded_p}{encoded_o}", encoded_s)
-        db.add_item("subject-predicate-object.db", f"{encoded_s}{encoded_p}{encoded_o}", 1)
+        db.add_item("subject-predicate.db", f"{encoded_s}-{encoded_p}", encoded_o)
+        db.add_item("subject-object.db", f"{encoded_s}-{encoded_o}", encoded_p)
+        db.add_item("predicate-object.db", f"{encoded_p}-{encoded_o}", encoded_s)
+        db.add_item("subject-predicate-object.db", f"{encoded_s}-{encoded_p}-{encoded_o}", 1)
         num_added += 1
 
         if num_added == 10000:
@@ -80,28 +71,15 @@ def process_data(encoded_triples, db):
     return batch_times
 
 
-def lookup(value):
-    try:
-        return alphabet_dict[value]
-    except KeyError:
-        return value
-
-
-def build_key(key):
-    # split_key = re.findall('..?', str(key))
-    # output = "".join([lookup(elem) for elem in split_key])
-
-    return key
-
-
 class RDFLoader:
 
     def __init__(self, graph_name):
         self.graph_name = graph_name
         self.mapped_values = {}
         self.values_dict = {}
+        self.encoded_triples = []
 
-    def encode_item(self, value: str = None) -> str:
+    def encode_item(self, value: str = None) -> int:
         try:
             encoded_value = self.values_dict[value]
         except KeyError:
@@ -111,7 +89,7 @@ class RDFLoader:
             encoded_value = mapped_id
         return encoded_value
 
-    def decode_item(self, item: bytes) -> tuple:
+    def decode_item(self, item: tuple) -> tuple:
         decoded = []
         try:
             for results in item:
@@ -120,13 +98,10 @@ class RDFLoader:
             decoded.append(self.mapped_values[item])
         return tuple(decoded)
 
-    def decode_items(self, items: List[str]):
+    def decode_items(self, items: List[tuple]):
         return [self.decode_item(item) for item in items]
 
-    def save_all(self, db):
-        db.set_dict("mapped_values", self.mapped_values)
-        # db.set_dict(build_key(self.graph_name, "ids", "values_dict"), self.values_dict)
-
-    def load_all(self, db):
-        self.mapped_values = db.get_dict("mapped_values")
-        # self.values_dict = db.get_dict(build_key(self.graph_name, "ids", "values_dict"))
+    def add_mappings_dictionaries(self, db):
+        db.add_item("mapped-values.db", self.graph_name, self.mapped_values)
+        db.add_item("values-dict.db", self.graph_name, self.values_dict)
+        db.add_item("triples.db", self.graph_name, self.encoded_triples)

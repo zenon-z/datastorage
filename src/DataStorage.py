@@ -10,7 +10,10 @@ DATABASES_NAMES = ['subject.db',
                    'subject-predicate.db',
                    'subject-object.db',
                    'predicate-object.db',
-                   'subject-predicate-object.db']
+                   'subject-predicate-object.db',
+                   'mapped-values.db',
+                   'values-dict.db',
+                   'triples.db']
 
 
 class DataStorage:
@@ -35,23 +38,31 @@ class DataStorage:
 
         return does_exist is not False and does_exist is not None
 
-    def _set_item(self, db_name: str, key: str, value: str) -> None:
+    def _set_item(self, db_name: str, key: str, value: List[tuple]) -> None:
         self.databases[db_name].set(key, value)
 
-    def get_item(self, db_name: str, key: str) -> Union[str, List[str]]:
+    def get_item(self, db_name: str, key: str) -> Union[tuple, List[tuple]]:
         value = self.databases[db_name].get(key)
         return value if value else []
 
     def _append_item(self, db_name: str, key: str, more: str) -> None:
         return self.databases[db_name].append(key, more)
 
-    def add_item(self, db_name: str, key: str, value: str) -> None:
+    def add_item(self, db_name: str, key: str, value: tuple) -> None:
         item = self.get_item(db_name, key)
         if not item:
             self._set_item(db_name, key, [value])
         else:
             item.append(value)
             self._set_item(db_name, key, item)
+
+    def delete_item(self, db_name: str, key: str, value_to_remove):
+        result = self.get_item(db_name, key)
+        result.remove(value_to_remove)
+        if len(result) == 0:
+            self.databases[db_name].rem(key)
+        else:
+            self._set_item(db_name, key, result)
 
     def get_keys(self, db_name) -> List[str]:
         return self.databases[db_name].getall()

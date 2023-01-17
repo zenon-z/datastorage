@@ -1,0 +1,9 @@
+dbd:Area wdrs:describedby <http://dbpedia.org/ontology/data/definitions.ttl> .
+
+dbd:Currency wdrs:describedby <http://dbpedia.org/ontology/data/definitions.ttl> .
+
+dbd:Density wdrs:describedby <http://dbpedia.org/ontology/data/definitions.ttl> .
+
+dbd:ElectricCurrent wdrs:describedby <http://dbpedia.org/ontology/data/definitions.ttl> .
+
+dbd:Energy wdrs:describedby <http://dbpedia.org/ontology/data/definitions.ttl> .

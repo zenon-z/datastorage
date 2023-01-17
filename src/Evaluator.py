@@ -1,15 +1,13 @@
 import time
 
-from Database import Database
-from RDFParser import RDFParser, BATCH_SIZE
-from Utilities import Utilities
-import rdf_loader
+from DataStorage import DataStorage
+from rdf_loader import RDFLoader
 import random_triple_generator
 
 
 class Evaluator:
 
-    def __init__(self, db: Database, encoded_triples: list(), graph_name: str, rdf_loader_obj):
+    def __init__(self, db: DataStorage, encoded_triples: list, graph_name: str, rdf_loader_obj: RDFLoader):
         self.rdf_loader_obj = rdf_loader_obj
         self.graph_name = graph_name
         self.encoded_triples = encoded_triples
@@ -41,11 +39,8 @@ class Evaluator:
     def add_key(self, db_name, key):
         self.all_keys[db_name].add(key)
 
-    def add_fake_key(self, db_name, key):
-        self.all_keys[db_name].add(rdf_loader.build_key(f"[{key}]"))
-
     def get_keys(self):
-        random_keys = random_triple_generator.get_random_triples(f"{self.graph_name}.ttl")
+        random_keys = random_triple_generator.get_random_triples(f"graphs/{self.graph_name}.ttl")
         for key in random_keys.keys():
             for line in random_keys[key]:
                 triple = line.split(" ")
@@ -55,10 +50,10 @@ class Evaluator:
                 self.add_key("subject", f"{s}")
                 self.add_key("predicate", f"{p}")
                 self.add_key("object", f"{o}")
-                self.add_key("subject-predicate", f"{s}{p}")
-                self.add_key("subject-object", f"{s}{o}")
-                self.add_key("predicate-object", f"{p}{o}")
-                self.add_key("subject-predicate-object", f"{s}{p}{o}")
+                self.add_key("subject-predicate", f"{s}-{p}")
+                self.add_key("subject-object", f"{s}-{o}")
+                self.add_key("predicate-object", f"{p}-{o}")
+                self.add_key("subject-predicate-object", f"{s}-{p}-{o}")
 
     def evaluate_subject(self):
         return self.evaluate_pattern_type("subject.db", self.all_keys["subject"])

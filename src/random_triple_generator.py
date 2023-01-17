@@ -5,7 +5,6 @@ names = ["s", "p", "o", "s-p", "s-o", "p-o", "s-p-o"]
 replace = False
 
 
-
 def initialize_triples_dict():
     triples = {}
     for name in names:
