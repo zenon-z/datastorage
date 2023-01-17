@@ -6,26 +6,7 @@ from rdf_loader import RDFLoader
 from src.Evaluator import Evaluator
 from Utilities import Utilities
 
-"""
-def parse_command(command):
-    commands = ["ADD_TRIPLE", "QUERY_TRIPLE", "DELETE_TRIPLE", "BULK_ADD", "BULK_UPDATE", "BULK_DELETE"]
-    parameters = command.split(" ")
-    if len(parameters) != 4 or not parameters[0] in commands:
-        print("UNKNOWN COMMAND")
-
-    if parameters[0] == "ADD_TRIPLE":
-        a = "a"
-    if parameters[0] == "QUERY_TRIPLE":
-        answer = find_pattern_value2(redis_db,
-                                     graph_parser,
-                                     subject_pattern=parse_pattern_variable(parameters[1]),
-                                     predicate_pattern=parse_pattern_variable(parameters[2]),
-                                     object_pattern=parse_pattern_variable(parameters[3]))
-        print(answer)
-"""
-
 if __name__ == '__main__':
-    graph_url2 = 'https://dbpedia.org/ontology/data/definitions.ttl'
     graph_url = "graphs/dbpedia.ttl"
     graph_name = "dbpedia"
 

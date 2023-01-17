@@ -5,6 +5,7 @@ from src.DataStorage import DataStorage
 from src.rdf_loader import RDFLoader
 import src.rdf_loader
 
+
 class Utilities:
 
     def __init__(self, database: DataStorage, rdf_loader_obj: RDFLoader):
@@ -95,7 +96,8 @@ class Utilities:
         self.database.delete_item("subject-predicate.db", f"{subject_pattern}-{predicate_pattern}", object_pattern)
         self.database.delete_item("subject-object.db", f"{subject_pattern}-{object_pattern}", predicate_pattern)
         self.database.delete_item("predicate-object.db", f"{predicate_pattern}-{object_pattern}", subject_pattern)
-        self.database.delete_item("subject-predicate-object.db", f"{subject_pattern}-{predicate_pattern}-{object_pattern}", 1)
+        self.database.delete_item("subject-predicate-object.db",
+                                  f"{subject_pattern}-{predicate_pattern}-{object_pattern}", 1)
 
     def add_triple(self,
                    subject_pattern: str,
@@ -111,6 +113,7 @@ class Utilities:
         self.database.add_item("predicate.db", f"{predicate_pattern}", (subject_pattern, object_pattern))
         self.database.add_item("object.db", f"{object_pattern}", (subject_pattern, predicate_pattern))
         self.database.add_item("subject-predicate.db", f"{subject_pattern}-{predicate_pattern}", object_pattern)
-        self.database.add_item("subject-object.db", f"{subject_pattern}-{object_pattern}",  predicate_pattern)
+        self.database.add_item("subject-object.db", f"{subject_pattern}-{object_pattern}", predicate_pattern)
         self.database.add_item("predicate-object.db", f"{predicate_pattern}-{object_pattern}", subject_pattern)
-        self.database.add_item("subject-predicate-object.db", f"{subject_pattern}-{predicate_pattern}-{object_pattern}", 1)
+        self.database.add_item("subject-predicate-object.db", f"{subject_pattern}-{predicate_pattern}-{object_pattern}",
+                               1)
