@@ -16,6 +16,9 @@ class Utilities:
         output = []
         triples = rdf_loader.read_file(filename, self.rdf_loader_obj, False)
         for s, p, o in triples:
+            s = "" if s.startswith("?") else s
+            p = "" if p.startswith("?") else p
+            o = "" if o.startswith("?") else o
             output += self.get_triple(s, p, o)
 
         return output

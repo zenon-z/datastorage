@@ -7,10 +7,12 @@ class ModelCli:
     def start_cli(self):
         print("The following commands are available:")
         for command in self.commands:
-            if command.__contains__("_TRIPLE"):
-                print(f"{command} <s> <p> <o>")
-            elif command.__contains__("BULK_"):
-                print(f"{command} <turtle file>")
+            print("ADD_TRIPLE <s> <p> <o> (RDF Triple)")
+            print("QUERY_TRIPLE <s> <p> <o> (SPARQL Triple")
+            print("DELETE_TRIPLE (RDF Triple)")
+            print("BULK_ADD <turtle file>")
+            print("BULK_GET <SPARQL query>")
+            print("BULK_DELETE <turtle file>")
         while True:
             self.parse_command(input("Enter a command\n"))
 
